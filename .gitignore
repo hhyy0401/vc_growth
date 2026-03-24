@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+data/
+results/
+results_hierarchical/
+batch_size/
+plot_mirror/
+plot_custom_batches/
+logs/
+*.npz
+*.pkl
+.DS_Store
