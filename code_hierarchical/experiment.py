@@ -125,8 +125,8 @@ def main():
     # Params
     parser.add_argument("--num_degree", type=int, default=1)
     parser.add_argument("--alpha", type=float, default=0.4)
-    parser.add_argument("--radius", type=float, default=6.0)
-    parser.add_argument("--tangent", type=float, default=30.0)
+    parser.add_argument("--radius", type=float, default=2.0)
+    parser.add_argument("--tangent", type=float, default=2.0)
 
     # hierarchical args
     parser.add_argument("--hierarchical", action="store_true", help="Enable hierarchical stage-wise model")

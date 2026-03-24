@@ -377,8 +377,8 @@ def main():
     
     parser.add_argument("--num_degree", type=int, default=1, help="Number of V1 parents per V2-V4 node")
     parser.add_argument("--alpha", type=float, default=0.4, help="Resource decay weight in [0,1]")
-    parser.add_argument("--radius", type=float, default=6.0, help="Radius distance threshold")
-    parser.add_argument("--tangent", type=float, default=30.0, help="Tangent threshold in degrees")
+    parser.add_argument("--radius", type=float, default=2.0, help="Radial kernel parameter")
+    parser.add_argument("--tangent", type=float, default=2.0, help="Tangential kernel parameter (degrees)")
     parser.add_argument(
         "--tsv_only",
         action="store_true",

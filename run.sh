@@ -6,5 +6,5 @@ python experiment.py \
     --mode mds \
     --distance_mode polar \
     --algo deterministic \
-    --radius 3.0 \
-    --tangent 15.0
+    --radius 2.0 \
+    --tangent 2.0

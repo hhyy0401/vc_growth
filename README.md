@@ -65,7 +65,7 @@ or directly:
 cd code/
 python experiment.py \
     --data R1_gpr_grid --tag lh \
-    --radius 3.0 --tangent 15.0
+    --radius 2.0 --tangent 2.0
 ```
 
 ### Hierarchical model
@@ -81,7 +81,7 @@ cd code_hierarchical/
 python experiment.py \
     --data R1_gpr_grid --tag lh \
     --hierarchical \
-    --radius 3.0 --tangent 15.0
+    --radius 2.0 --tangent 2.0
 ```
 
 ### Key Arguments
@@ -90,8 +90,8 @@ python experiment.py \
 |---|---|---|
 | `--data` | Dataset identifier (e.g., `R1_gpr_grid`, `S1_gpr_grid`) | `R1_gpr_grid` |
 | `--tag` | Hemisphere (`lh` or `rh`) | `lh` |
-| `--radius` | Radial kernel parameter | `6.0` |
-| `--tangent` | Tangential kernel parameter (degrees) | `30.0` |
+| `--radius` | Radial kernel parameter | `2.0` |
+| `--tangent` | Tangential kernel parameter (degrees) | `2.0` |
 | `--action` | `run` (simulation) or `video` (run + animation) | `run` |
 | `--stage-ratio` | Fraction of sources that must connect before advancing stage (hier only) | `0.90` |
 

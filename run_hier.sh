@@ -7,5 +7,5 @@ python experiment.py \
     --distance_mode polar \
     --algo deterministic \
     --hierarchical \
-    --radius 3.0 \
-    --tangent 15.0
+    --radius 2.0 \
+    --tangent 2.0

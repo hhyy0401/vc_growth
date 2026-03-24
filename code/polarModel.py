@@ -29,8 +29,8 @@ class VisualMatrix3D(object):
             print(f"Custom batch mode: {self.custom_batch_mode} (mode={mode_name}, ecc={ecc_order})")
             self.custom_node_order, self.custom_batch_assignments = get_custom_node_order(
                 dataDF, mode_name, ecc_order, n_batches=30,
-                radius=float(param.get("radius", 6.0)),
-                tangent_deg=float(param.get("tangent", 30.0)),
+                radius=float(param.get("radius", 2.0)),
+                tangent_deg=float(param.get("tangent", 2.0)),
             )
             self.batch_size_start = 1
             self.batch_size_end = 1
@@ -56,8 +56,8 @@ class VisualMatrix3D(object):
             self.batch_size_end = 1
             self.batch_size = 1
 
-        self.radius = float(param.get("radius", 6.0))
-        self.tangent = float(param.get("tangent", 30.0))
+        self.radius = float(param.get("radius", 2.0))
+        self.tangent = float(param.get("tangent", 2.0))
         self.distance_mode = param.get("distance_mode", "polar")
         self.direct_distance_weight = 1.0
 
@@ -83,7 +83,7 @@ class VisualMatrix3D(object):
         self.batch_info = []
         self.indicator = self.simulate(dataDF, param)
 
-    def initMatrix(self, DF, radius=6.0, tangent=30.0, mode="sphere", distance_mode="polar"):
+    def initMatrix(self, DF, radius=2.0, tangent=2.0, mode="sphere", distance_mode="polar"):
         V1Count = DF[(DF["area"] == 1)].shape[0]
         VnCount = DF[(DF["area"] != 1)].shape[0]
 

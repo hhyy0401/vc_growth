@@ -36,8 +36,8 @@ class VisualMatrix3D(object):
             self.batch_size_start = int(param.get("batch_size_start", 1))
             self.batch_size_end = int(param.get("batch_size_end", 1))
 
-        self.radius = float(param.get("radius", 6.0))
-        self.tangent = float(param.get("tangent", 30.0))
+        self.radius = float(param.get("radius", 2.0))
+        self.tangent = float(param.get("tangent", 2.0))
         self.distance_mode = param.get("distance_mode", "polar")
         self.direct_distance_weight = 1.0
         self.tag = param.get("tag", None)
@@ -84,7 +84,7 @@ class VisualMatrix3D(object):
 
         self.indicator = self.simulate(dataDF, param)
 
-    def _build_full_kernel(self, DF, radius=6.0, tangent=30.0, distance_mode="polar"):
+    def _build_full_kernel(self, DF, radius=2.0, tangent=2.0, distance_mode="polar"):
         radius = float(radius)
         tangent = float(tangent)
 
