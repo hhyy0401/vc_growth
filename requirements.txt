@@ -1,0 +1,9 @@
+# Pinned to the versions used to produce the published results (Python 3.10).
+# PyTorch is CPU-capable; the CUDA build (2.2.1+cu121) was used but is not required.
+numpy==1.26.4
+pandas==2.2.1
+scipy==1.12.0
+torch==2.2.1
+matplotlib==3.8.3
+plotly==5.24.1
+tqdm>=4.0
