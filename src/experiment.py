@@ -426,7 +426,7 @@ def main():
     # Parameters
     # num_degree is fixed to 1 in this model; the argument is accepted but not varied.
     parser.add_argument("--num_degree", type=int, default=1, help="Connection degree (fixed to 1).")
-    parser.add_argument("--alpha", type=float, default=0.4, help="Resource decay weight in [0,1]. New decay = (1-alpha) + alpha*(original).")
+    parser.add_argument("--alpha", type=float, default=0.30, help="Resource decay weight in [0,1]")
     parser.add_argument("--radius", type=float, default=6.0, help="Radius distance threshold (replaces legacy --euclidean).")
     parser.add_argument("--tangent", type=float, default=30.0, help="Tangential kernel threshold in degrees")
     # Output control

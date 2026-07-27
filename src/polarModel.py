@@ -17,7 +17,7 @@ class VisualMatrix3D(object):
         self.num_degree = int(param.get("num_degree", 2))
         # alpha in [0,1]: mixes resource decay as (1-alpha) + alpha*(original_resource)
         # alpha=1.0 -> original behavior, alpha=0.0 -> no decay (resource=1)
-        self.alpha = float(param.get("alpha", 0.4))
+        self.alpha = float(param.get("alpha", 0.30))
         self.mode = param.get("coordinate_mode", "sphere")
         self.batch_size_start = int(param.get("batch_size_start", int(param.get("batch_size", 1))))
         self.batch_size_end = int(param.get("batch_size_end", int(param.get("batch_size", 1))))
