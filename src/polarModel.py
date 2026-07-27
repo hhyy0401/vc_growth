@@ -61,7 +61,7 @@ class VisualMatrix3D(object):
                 self.batch_size_end = 1
                 self.batch_size = 1
         else:
-            # User said "delete 100->40 logic, just 1"
+            # Default to sequential single-node assignment.
             self.batch_size_start = 1
             self.batch_size_end = 1
             self.batch_size = 1
@@ -176,10 +176,10 @@ class VisualMatrix3D(object):
             d_t = scale * (et @ U.t())                                # (N,N) tangential component
             del scale, sin_ij
 
-            # --- Optional MDS-scale normalization (default OFF, per revision) ---
+            # --- Optional MDS-scale normalization (default off) ---
             # SPHERE_GEO_NORMALIZE=1 rescales geodesic distances so the max pairwise
             # geodesic matches the MDS diameter (sigma in MDS units). Default 0: keep
-            # RAW geodesic mm on the R=100 sphere. Professor's instruction: do not normalize.
+            # raw geodesic distances on the radius-100 sphere.
             import os as _os
             if _os.environ.get("SPHERE_GEO_NORMALIZE", "0") == "1":
                 mds_xy = torch.stack([x_coords, y_coords], dim=1).to(torch.float64)
@@ -615,4 +615,3 @@ class VisualMatrix3D(object):
         # Use cached degree (updated incrementally in _assign_single_vn / step_custom)
         V1_resource = 1.0 / (self._cached_deg + 1.0)
         return V1_resource.unsqueeze(1).expand(-1, self.matrixD.shape[1])
-
