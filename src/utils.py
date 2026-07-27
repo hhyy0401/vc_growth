@@ -89,8 +89,7 @@ def compute_dynamic_batch_sizes(DF, output_dir=None, data_name="data", tag_name=
     """
     # 1. Get V2-V4 angles
     vn = DF[DF["area"] != 1]
-    # Re-compute 't' here just to be safe, or use existing 't'
-    # DF['t'] is in radians.
+    # DF['t'] stores angular position in radians.
     vn_t = vn["t"].values
     vn_deg = normalize_angle(np.degrees(vn_t))
     total_vn = len(vn_deg)
@@ -102,14 +101,7 @@ def compute_dynamic_batch_sizes(DF, output_dir=None, data_name="data", tag_name=
     start_angle, end_angle, sweep_width = get_v2_v4_range(vn_deg)
     
     # 3. Sweep
-    # Front1 starts at start_angle (Upper V1 bound) and moves +
-    # Front2 starts at end_angle (Lower V1 bound) and moves -
-    # Wait, end_angle is the END of V2-V4 block.
-    # So Front2 should start at end_angle and move MINUS?
-    # Yes. "Sweep Outward" means from V1 edges into V2-V4.
-    # V1 Gap is (end_angle, start_angle).
-    # So V1 Upper Edge = start_angle.
-    # V1 Lower Edge = end_angle.
+    # Sweep inward across the V2-V4 block from its two angular endpoints.
     
     step_size = 2.0
     front_plus = start_angle
@@ -143,23 +135,9 @@ def compute_dynamic_batch_sizes(DF, output_dir=None, data_name="data", tag_name=
         front_plus = next_plus
         front_minus = next_minus
         
-        # Check if we covered everything or fronts crossed relative to original sweep_width
-        # Computing distance covered:
-        # We can just check coverage percentage or geometrical distance.
         if np.all(covered_mask):
-             # Ensure we don't stop prematurely if there are gaps inside V2-V4?
-             # But if covered_mask is all True, we are done.
-             break
+            break
 
-        # Safety break if distance crossed
-        dist_remaining = (front_minus - front_plus + 360) % 360
-        # If we started with sweep_width ~ 270.
-        # After k steps, fronts move closer.
-        # If dist_remaining jumps to large value (wrap around logic issue) or becomes small.
-        # Actually, simpler: just use covered_mask. 
-        # But if V2-V4 has holes, covered_mask might happen later.
-        # Let's rely on max_steps which is calculated from sweep_width.
-    
     # If explicit file save requested
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
@@ -350,10 +328,9 @@ def plot_tuning_compare_two_panel(
     os.makedirs(out_base, exist_ok=True)
     out_path = os.path.join(out_base, f"{args.data}_{args.tag}_tuning_compare{param_suffix}.png")
 
-    # Three-panel plot (true / predicted / eccentricity)
-    # Per request: smaller PNG overall, tight layout; marker size tuned for readability.
+    # Compact three-panel plot (true / predicted / eccentricity).
     fig, axes = plt.subplots(1, 3, figsize=(9, 3.2))
-    # Per request: unify marker style (all circles), independent of area.
+    # Use a common marker style across areas.
     marker_sym = 'o'
     marker_size = 10
 
@@ -426,7 +403,7 @@ def plot_tuning_compare_two_panel(
                         )
         ax.set_title(title)
         ax.set_aspect('equal')
-        # Per request: remove background grid/axes.
+        # Remove background grid and axes.
         ax.axis('off')
         
         # Plot is_center node with black bold X marker
@@ -442,8 +419,7 @@ def plot_tuning_compare_two_panel(
     # Left: true (always show all nodes with true colors)
     plot_with_mask(axes[0], coords, areas, true_rgba, "True", is_predicted_panel=False)
 
-    # Right: predicted (show unconnected nodes in black)
-    # Per request: only change the title text.
+    # Right: predicted (show unconnected nodes in black).
     plot_with_mask(axes[1], coords, areas, pred_rgba, "Polar angle", is_predicted_panel=True)
 
     # Third: eccentricity (r-based) colors.
@@ -499,8 +475,7 @@ def loadDataDF(data="X1", tag="lh", mode="sphere"):
         print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
     # Construct pkl file path based on data and tag.
-    # Unified shared data root (all model pkls: R1*, S* base/transfer, human*).
-    # Overridable via SHARED_DATA_ROOT env; falls back to ../data for legacy layout.
+    # The data root can be overridden through SHARED_DATA_ROOT.
     _repo_data = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
     _data_root = os.environ.get("SHARED_DATA_ROOT", _repo_data)
     pkl_file = f"{_data_root}/{data}_{tag}.pkl"
@@ -950,8 +925,6 @@ def save_baseline_results(
         print(f"   Params: {param_file}")
 
     return actual_params["mse"], pred_colors_array
-
-
 
 
 

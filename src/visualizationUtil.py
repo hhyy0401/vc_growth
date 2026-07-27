@@ -381,7 +381,7 @@ def create_video_animation(
                 # (they should have connections if they're visible)
                 frame_colors[df_idx] = all_colors[df_idx]
                 frame_opacity[df_idx] = 1.0
-        # Per request: unify marker style to circles (no area-dependent shapes)
+        # Use circles for all areas.
         node_ids_all = [str(int(v)) for v in DF["ID"].values]
         frame_data = [
             go.Scatter(
@@ -474,7 +474,7 @@ def create_video_animation(
     out_path = os.path.join(out_dir, f"{data}_{tag}_animation{filename_suffix}.html")
     plot(fig, filename=out_path, auto_open=False)
     print(f"Video animation saved to: {out_path}")
-    # Note: Results are already saved during simulation run, no need to save again here
+    # Simulation outputs are saved before animation rendering.
 
     # Generate timestamp plot for custom batch modes
     if custom_batch_mode:
