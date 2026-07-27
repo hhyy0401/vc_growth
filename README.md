@@ -55,12 +55,15 @@ specific one, otherwise PyTorch picks a device automatically).
 ## Run the example
 
 ```bash
-bash scripts/run_example.sh            # R1, left hemisphere
-bash scripts/run_example.sh S1 rh      # any subject / hemisphere
+bash scripts/run_example.sh
+bash scripts/run_example.sh --data S1_gpr_grid --tag rh
+bash scripts/run_example.sh \
+    --data R1_gpr_grid --sigma-r 1.30 --sigma-t 2.20
 ```
 
-This runs the growth simulation with the published hyperparameters
-**sigma_R = 1.30, sigma_T = 2.20, alpha = 0.30** and writes:
+The user-facing script exposes the dataset, hemisphere, and two model parameters.
+All other options remain at the published defaults. With no arguments it runs
+R1 LH with **sigma_R = 1.30, sigma_T = 2.20, alpha = 0.30**.
 
 | Output | Path |
 |--------|------|
@@ -78,18 +81,17 @@ SHARED_DATA_ROOT=../data python experiment.py \
     --radius 1.30 --tangent 2.20 --alpha 0.30
 ```
 
-### Key arguments
+### `run_example.sh` arguments
 
-| Argument          | Meaning                                     | Published value |
-|-------------------|---------------------------------------------|-----------------|
-| `--data`          | Subject (`R1_gpr_grid`, `S1_gpr_grid`, …)   | —               |
-| `--tag`           | Hemisphere (`lh` / `rh`)                    | —               |
-| `--radius`        | Radial kernel width (sigma_R)               | `1.30`          |
-| `--tangent`       | Tangential kernel width, degrees (sigma_T)  | `2.20`          |
-| `--alpha`         | Resource-decay weight                       | `0.30`          |
-| `--mode`          | Coordinate space                            | `mds`           |
-| `--distance_mode` | Kernel geometry                             | `polar`         |
-| `--algo`          | `deterministic` or `stochastic`             | `deterministic` |
+| Argument      | Meaning                                    | Default       |
+|---------------|--------------------------------------------|---------------|
+| `--data`      | Dataset (`R1_gpr_grid`, `S1_gpr_grid`, …) | `R1_gpr_grid` |
+| `--tag`       | Hemisphere (`lh` / `rh`)                   | `lh`          |
+| `--sigma-r`   | Radial kernel width (sigma_R)              | `1.30`        |
+| `--sigma-t`   | Tangential kernel width (sigma_T)          | `2.20`        |
+
+The wrapper keeps `alpha=0.30`, `mode=mds`, `distance_mode=polar`, and
+`algo=deterministic` fixed at their published defaults.
 
 ## How it works
 
