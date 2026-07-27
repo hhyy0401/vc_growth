@@ -61,15 +61,9 @@ bash scripts/run_example.sh \
     --data R1_gpr_grid --sigma-r 1.30 --sigma-t 2.20
 ```
 
-The user-facing script exposes the dataset, hemisphere, and two model parameters.
-All other options remain at the published defaults. With no arguments it runs
-R1 LH with **sigma_R = 1.30, sigma_T = 2.20, alpha = 0.30**.
-
-| Output | Path |
-|--------|------|
-| Predicted vs. true tuning (V2–V4) | `outputs/predictions/mds/predicted_R1_gpr_grid_lh_deterministic_1.30_2.20_0.30.tsv` |
-| Three-panel map (true / predicted polar angle / eccentricity) | `outputs/plots/R1_gpr_grid_lh_tuning_compare_1.30_2.20_0.30.png` |
-| Weight matrix + generation order | `outputs/predictions/mds/W_R1_gpr_grid_lh_deterministic_1.30_2.20_0.30.npz` |
+The script exposes the dataset, hemisphere, and two model parameters. With no
+arguments it runs R1 LH with **sigma_R = 1.30** and **sigma_T = 2.20**.
+The model uses the published default **alpha = 0.30**.
 
 ## Running directly
 
@@ -78,7 +72,7 @@ cd src
 SHARED_DATA_ROOT=../data python experiment.py \
     --data R1_gpr_grid --tag lh \
     --mode mds --distance_mode polar --algo deterministic \
-    --radius 1.30 --tangent 2.20 --alpha 0.30
+    --radius 1.30 --tangent 2.20
 ```
 
 ### `run_example.sh` arguments
@@ -91,16 +85,14 @@ SHARED_DATA_ROOT=../data python experiment.py \
 | `--sigma-t`   | Tangential kernel width (sigma_T)          | `2.20`        |
 
 The wrapper keeps `alpha=0.30`, `mode=mds`, `distance_mode=polar`, and
-`algo=deterministic` fixed at their published defaults.
+`algo=deterministic` at their published defaults.
 
-## How it works
+## Output
 
-1. **Kernel** — a pairwise rotated-elliptical connectivity kernel between all
-   nodes, decomposing displacement into local radial / tangential components
-   with separate widths (`sigma_R`, `sigma_T`).
-2. **Iterative assignment** — at each step the unassigned V2–V4 node with the
-   highest propagation score (indirect signal through already-connected nodes
-   plus direct kernel affinity, weighted by remaining source resource, decayed
-   by `alpha`) is connected to its top-scoring V1 parent(s).
-3. **Evaluation** — predicted V2–V4 tuning = (column-normalized W)ᵀ · V1 tuning;
-   MSE is computed against ground truth.
+For the default run, the script creates:
+
+| File | Description |
+|------|-------------|
+| `outputs/predictions/mds/predicted_R1_gpr_grid_lh_deterministic_1.30_2.20_0.30.tsv` | Predicted and empirical V2–V4 tuning values |
+| `outputs/predictions/mds/W_R1_gpr_grid_lh_deterministic_1.30_2.20_0.30.npz` | Model weight matrix and node-generation order |
+| `outputs/plots/R1_gpr_grid_lh_tuning_compare_1.30_2.20_0.30.png` | Empirical and predicted polar-angle and eccentricity maps |

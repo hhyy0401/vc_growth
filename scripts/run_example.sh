@@ -12,7 +12,7 @@
 set -euo pipefail
 
 usage() {
-    sed -n '2,12p' "$0"
+    sed -n '2,11p' "$0"
 }
 
 DATA="R1_gpr_grid"
@@ -62,7 +62,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Point the loader at the pkls bundled in this repo.
 export SHARED_DATA_ROOT="$REPO_ROOT/data"
 
-# Remaining published defaults are intentionally fixed here.
+# Published alpha default, used when constructing output names.
 ALPHA=0.30
 
 cd "$REPO_ROOT/src"
@@ -73,8 +73,7 @@ python experiment.py \
     --distance_mode polar \
     --algo deterministic \
     --radius "$SIGMA_R" \
-    --tangent "$SIGMA_T" \
-    --alpha "$ALPHA"
+    --tangent "$SIGMA_T"
 
 SUFFIX="$(printf '%.2f_%.2f_%.2f' "$SIGMA_R" "$SIGMA_T" "$ALPHA")"
 echo
