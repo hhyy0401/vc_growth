@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Reproduce the growth-model prediction for one subject/hemisphere with the
-# published parameters (sigma_R = 1.30, sigma_T = 2.20, alpha = 0.30).
+# published parameters (sigma_R = 1.30, sigma_T = 2.20).
 #
 # Usage:
 #   bash scripts/run_example.sh
@@ -62,9 +62,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Point the loader at the pkls bundled in this repo.
 export SHARED_DATA_ROOT="$REPO_ROOT/data"
 
-# Published alpha default, used when constructing output names.
-ALPHA=0.30
-
 cd "$REPO_ROOT/src"
 python experiment.py \
     --data "$DATA" \
@@ -75,7 +72,7 @@ python experiment.py \
     --radius "$SIGMA_R" \
     --tangent "$SIGMA_T"
 
-SUFFIX="$(printf '%.2f_%.2f_%.2f' "$SIGMA_R" "$SIGMA_T" "$ALPHA")"
+SUFFIX="$(printf '%.2f_%.2f' "$SIGMA_R" "$SIGMA_T")"
 echo
 echo "Outputs (relative to repo root):"
 echo "  outputs/predictions/mds/predicted_${DATA}_${TAG}_deterministic_${SUFFIX}.tsv"
