@@ -198,9 +198,8 @@ def create_video_animation(
     data,
     tag,
     mode,
-    alpha=1.0,
-    euclidean=6.0,
-    tangent=30.0,
+    euclidean=1.30,
+    tangent=2.20,
     DF=None,
     matrix=None,
     pred_colors_array=None,
@@ -221,9 +220,7 @@ def create_video_animation(
     )
 
     print("Creating video animation from saved simulation results…")
-    if not (0.0 <= float(alpha) <= 1.0):
-        raise ValueError(f"alpha must be in [0,1] (got {alpha})")
-    print(f"Parameters: alpha={float(alpha):.1f}, euclidean={euclidean}, tangent={tangent}")
+    print(f"Parameters: euclidean={euclidean}, tangent={tangent}")
     print("NOTE: Using pre-computed simulation results and colors (no re-simulation, no re-computation)")
 
     # DF, matrix, and pred_colors_array must be provided (from runSimulation)
@@ -466,9 +463,8 @@ def create_video_animation(
     os.makedirs(out_dir, exist_ok=True)
     e_str = f"{euclidean:.2f}"
     a_str = f"{tangent:.2f}"
-    alpha_str = f"{float(alpha):.1f}"
     # Always use .html extension (polar mode)
-    filename_suffix = f"_{e_str}_{a_str}_{alpha_str}"
+    filename_suffix = f"_{e_str}_{a_str}"
     if custom_batch_mode:
         filename_suffix += f"_{custom_batch_mode}"
     out_path = os.path.join(out_dir, f"{data}_{tag}_animation{filename_suffix}.html")
@@ -479,7 +475,7 @@ def create_video_animation(
     # Generate timestamp plot for custom batch modes
     if custom_batch_mode:
         create_timestamp_plot(
-            data, tag, alpha=alpha, euclidean=euclidean, tangent=tangent,
+            data, tag, euclidean=euclidean, tangent=tangent,
             all_x=all_x, all_y=all_y, v1_mask=v1_mask,
             V1_count=V1_count,
             node_generation_order=matrix.node_generation_order,
@@ -490,7 +486,7 @@ def create_video_animation(
 
 
 def create_timestamp_plot(
-    data, tag, alpha, euclidean, tangent,
+    data, tag, euclidean, tangent,
     all_x, all_y, v1_mask, V1_count,
     node_generation_order, custom_batch_mode,
     batch_info=None, areas=None,
@@ -627,8 +623,7 @@ def create_timestamp_plot(
     os.makedirs(out_dir, exist_ok=True)
     e_str = f"{euclidean:.2f}"
     a_str = f"{tangent:.2f}"
-    alpha_str = f"{float(alpha):.1f}"
-    fname = f"{data}_{tag}_{e_str}_{a_str}_{alpha_str}_{custom_batch_mode}.png"
+    fname = f"{data}_{tag}_{e_str}_{a_str}_{custom_batch_mode}.png"
     out_path = os.path.join(out_dir, fname)
 
     plt.savefig(out_path, dpi=300, bbox_inches="tight", pad_inches=0.05)

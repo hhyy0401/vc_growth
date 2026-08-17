@@ -15,9 +15,6 @@ class VisualMatrix3D(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.outputDir = initDirectory(param, outputDir)
         self.num_degree = int(param.get("num_degree", 2))
-        # alpha in [0,1]: mixes resource decay as (1-alpha) + alpha*(original_resource)
-        # alpha=1.0 -> original behavior, alpha=0.0 -> no decay (resource=1)
-        self.alpha = float(param.get("alpha", 0.30))
         self.mode = param.get("coordinate_mode", "sphere")
         self.batch_size_start = int(param.get("batch_size_start", int(param.get("batch_size", 1))))
         self.batch_size_end = int(param.get("batch_size_end", int(param.get("batch_size", 1))))
@@ -36,8 +33,8 @@ class VisualMatrix3D(object):
             print(f"Custom batch mode: {self.custom_batch_mode} (mode={mode_name}, ecc={ecc_order})")
             self.custom_node_order, self.custom_batch_assignments = get_custom_node_order(
                 dataDF, mode_name, ecc_order, n_batches=30,
-                radius=float(param.get("radius", 6.0)),
-                tangent_deg=float(param.get("tangent", 30.0)),
+                radius=float(param.get("radius", 1.30)),
+                tangent_deg=float(param.get("tangent", 2.20)),
             )
             # In custom mode, batch_size is determined by the precomputed batches
             self.batch_size_start = 1
@@ -69,8 +66,8 @@ class VisualMatrix3D(object):
 
 
 
-        self.radius = float(param.get("radius", 6.0))
-        self.tangent = float(param.get("tangent", 30.0))
+        self.radius = float(param.get("radius", 1.30))
+        self.tangent = float(param.get("tangent", 2.20))
         # "polar" = rotated elliptical kernel; "arc" = old arc+radius kernel; "euclidean" = 3D euclidean
         self.distance_mode = param.get("distance_mode", "polar")
         self.matrixC, self.matrixW, self.matrixD, self.mask = self.initMatrix(
@@ -101,7 +98,7 @@ class VisualMatrix3D(object):
         self.batch_info = []
         self.indicator = self.simulate(dataDF, param)
 
-    def initMatrix(self, DF, radius=6.0, tangent=30.0, mode="sphere", distance_mode="polar"):
+    def initMatrix(self, DF, radius=1.30, tangent=2.20, mode="sphere", distance_mode="polar"):
         V1Count = DF[(DF["area"] == 1)].shape[0]
         VnCount = DF[(DF["area"] != 1)].shape[0]
 
@@ -136,7 +133,7 @@ class VisualMatrix3D(object):
             # This replaces the old azimuthal-equidistant projection about is_center,
             # which stretched tangential distances by th/sin(th) (up to ~21% at the
             # patch edge). The center only DEFINES the radial direction, not the origin
-            # of distance. Everything else (center, growth rule, alpha, algo, node
+            # of distance. Everything else (center, growth rule, algo, node
             # order) is identical to MDS mode.
             R_SPHERE = 100.0
             sx = torch.tensor(DF["sx"].values, device=self.device, dtype=torch.float64)
