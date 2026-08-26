@@ -10,7 +10,6 @@ import plotly.express as px
 from plotly.offline import plot
 
 sys.path.append('..')
-from node_color_utils import calculate_node_colors
 # Import unified tuning color utilities
 import sys
 sys.path.insert(0, '..')  # Add parent directory to path

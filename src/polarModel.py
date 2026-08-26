@@ -14,7 +14,7 @@ class VisualMatrix3D(object):
     def __init__(self, dataDF, param, outputDir):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.outputDir = initDirectory(param, outputDir)
-        self.num_degree = int(param.get("num_degree", 2))
+        self.num_degree = int(param.get("num_degree", 1))
         self.mode = param.get("coordinate_mode", "sphere")
         self.batch_size_start = int(param.get("batch_size_start", int(param.get("batch_size", 1))))
         self.batch_size_end = int(param.get("batch_size_end", int(param.get("batch_size", 1))))
@@ -93,7 +93,9 @@ class VisualMatrix3D(object):
         # self.color_mask = self._compute_color_mask(dataDF, V1Count)
         # Set all V1 nodes as unmasked (can connect)
         self.color_mask = torch.zeros(V1Count, device=self.device, dtype=torch.float32)
-        self.record = self.initRecord()
+        # allocated lazily: initRecord() is ~2.5 GB for NMT LH and only the
+        # "visualize" path ever writes to it
+        self.record = None
         self.node_generation_order = []
         self.batch_info = []
         self.indicator = self.simulate(dataDF, param)
@@ -274,6 +276,11 @@ class VisualMatrix3D(object):
         mode = param["mode"]
         V1Count = self.matrixC.shape[0]
         VnCount = self.matrixD.shape[1]
+        if mode not in ("fit", "visualize"):
+            # Silence here is how --sim_mode record used to destroy results:
+            # an unhandled mode fell through, nothing grew, and the caller
+            # saved the untouched matrix as if it were a finished run.
+            raise ValueError(f"unknown simulation mode {mode!r}")
         if mode == "fit":
             total_remaining = int(torch.sum(torch.diag(self.mask)).item())
             # Estimate number of batches using arithmetic mean of start/end batch sizes
@@ -302,6 +309,8 @@ class VisualMatrix3D(object):
                     if loops >= max_loops:
                         break
         elif mode == "visualize":
+            if self.record is None:
+                self.record = self.initRecord()
             recordIdx = 0
             total_remaining = int(torch.sum(torch.diag(self.mask)).item())
             denom = max(1, int(self.batch_size_start + self.batch_size_end))

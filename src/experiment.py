@@ -262,33 +262,6 @@ def gridSearch(data="R1_gpr_grid", tag="lh", mode='mds', min_degree=1, max_degre
 
     return results_df
 
-def load_parameters_from_file(data, tag, mode):
-    """Load (sigma_R, sigma_T) from a params txt file.
-    Priority: own data -> R1_gpr_grid -> published defaults.
-    """
-    param_txt = f"../outputs/predictions/{mode}/params_{data}_{tag}.txt"
-    try:
-        loaded_params = np.loadtxt(param_txt)
-        print(f"Loaded parameters from {param_txt}: {loaded_params}")
-        return loaded_params[0], loaded_params[1]
-    except FileNotFoundError:
-        print(f"No parameter file found at {param_txt}")
-        # Try fallback to the NMT template subject
-        if data != "R1_gpr_grid":
-            fallback_txt = f"../outputs/predictions/{mode}/params_R1_gpr_grid_{tag}.txt"
-            try:
-                loaded_params = np.loadtxt(fallback_txt)
-                print(f"Loaded fallback parameters from {fallback_txt}: {loaded_params}")
-                return loaded_params[0], loaded_params[1]
-            except FileNotFoundError:
-                print(f"No fallback parameter file found at {fallback_txt}")
-        print("Using published default parameters...")
-        return 1.30, 2.20
-    except Exception as e:
-        print(f"Error loading parameters: {e}")
-        print("Using published default parameters...")
-        return 1.30, 2.20
-
 def runSimulation(args):
     import os
     DF = loadDataDF(args.data, args.tag, args.mode)
@@ -306,11 +279,15 @@ def runSimulation(args):
         print(f"Parameters: radius={radius_threshold}, tangent={tangent} (num_degree fixed to {eff_num_degree})")
 
     print(f"Coordinate mode: {args.mode}")
-    print(f"Simulation mode: {args.sim_mode}")
     print(f"Algorithm: {args.algo}")
     
-    # Map sim_mode to param mode
-    param_mode = "fit" if args.sim_mode == "fit" else "record"
+    # The --sim_mode flag was removed on 2026-08-25. It mapped to param["mode"]
+    # = "record", which no branch of polarModel.step() handles, so the growth loop
+    # never ran, simulate() returned None, and the caller went on to overwrite the
+    # correct prediction files with an ungrown model, exiting 0. Nothing reads the
+    # per-step record: the growth-sequence figure is rebuilt from the final weight
+    # matrix and node_generation_order in W_*.npz.
+    param_mode = "fit"
     
     # Map algo to sampleMatrix
     sample_matrix = -1 if args.algo == "deterministic" else 1
@@ -410,7 +387,6 @@ def main():
     )
     # Execution parameters
     parser.add_argument("--action", type=str, default="run", choices=["run", "video"], help="run=simulation, video=create animation")
-    parser.add_argument("--sim_mode", type=str, default="fit", choices=["fit", "record"], help="fit=normal simulation, record=intermediate steps")
     parser.add_argument("--mode", type=str, required=True, help="Mode of the simulation")
     parser.add_argument("--distance_mode", type=str, default="polar", choices=["polar", "arc", "euclidean", "sphere_geo"],
                         help="Distance kernel: polar (rotated elliptical, default), arc (arc+radius), euclidean (3D), or sphere_geo (great-circle on radius-100 sphere)")

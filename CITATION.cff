@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+title: >-
+  Growth model code and inputs for "Self-organization of higher visual areas
+  across the cortical surface"
+message: >-
+  If you use this software or the input data, please cite both the software and
+  the paper it accompanies.
+type: software
+authors:
+  - given-names: Hyunju
+    family-names: Kim
+    orcid: https://orcid.org/0009-0005-7960-0969
+  - given-names: Michael
+    family-names: Arcaro
+    orcid: https://orcid.org/0000-0002-4612-9921
+  - given-names: Nabil
+    family-names: Imam
+    orcid: https://orcid.org/0000-0003-2143-2286
+repository-code: https://github.com/hhyy0401/vc_growth
+license: MIT
+version: 1.0.0
+doi: 10.5281/zenodo.22116207
+preferred-citation:
+  type: article
+  title: >-
+    Self-organization of higher visual areas across the cortical surface
+  authors:
+    - given-names: Hyunju
+      family-names: Kim
+      orcid: https://orcid.org/0009-0005-7960-0969
+    - given-names: Michael
+      family-names: Arcaro
+      orcid: https://orcid.org/0000-0002-4612-9921
+    - given-names: Nabil
+      family-names: Imam
+      orcid: https://orcid.org/0000-0003-2143-2286
+  journal: Nature Communications
+  # year:   # fill in on acceptance
+  # doi:    # fill in on acceptance

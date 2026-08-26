@@ -1,9 +1,13 @@
-# Geometric Constraints in the Development of Primate Extrastriate Visual Cortex
+# Self-organization of higher visual areas across the cortical surface
 
-Reference implementation for the macaque retinotopy growth model.
-The model simulates feed-forward connectivity growth from V1 into higher visual
-areas (V2, V3, V4) on fMRI-derived cortical surface data, then predicts the
-retinotopic tuning of the higher areas and compares it against ground truth.
+Reference implementation of the growth model. Connectivity grows outward from V1
+into higher visual areas (V2, V3, V4) on fMRI-derived cortical surface geometry,
+and the retinotopic tuning of the higher areas is predicted from that connectivity
+and compared against the measured maps.
+
+The model is deterministic and every other random state in the pipeline is fixed,
+so the numbers reported in the paper reproduce exactly on re-execution. The one
+exception is noted under [Batch-ordering control](#batch-ordering-control).
 
 ## Setup
 
@@ -12,7 +16,8 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Tested with Python 3.10. A GPU is optional; the model runs on CPU.
+Tested with Python 3.10. A GPU is optional: the default run takes about 6 s on a
+GPU and about 75 s on CPU.
 
 ## Run
 
@@ -21,7 +26,8 @@ bash scripts/run_example.sh
 bash scripts/run_example.sh --data S1_gpr_grid --tag rh
 ```
 
-With no arguments it runs R1 LH with sigma_R = 1.30 and sigma_T = 2.20.
+With no arguments it runs the NMT template, left hemisphere, at sigma_R = 1.30 and
+sigma_T = 2.20, which is the parameter pair used for every result in the paper.
 
 Equivalent direct call:
 
@@ -33,48 +39,89 @@ SHARED_DATA_ROOT=../data python experiment.py \
     --radius 1.30 --tangent 2.20
 ```
 
+Run from inside `src/`. Output paths are relative to the working directory, so
+calling `python src/experiment.py` from the repository root writes outside the
+repository.
+
 ## Input
 
-`data/{subject}_{hemi}.pkl` is a dict keyed by node ID; each entry holds:
+`data/{subject}_gpr_grid_{hemi}.pkl` is a dict keyed by node ID; each entry holds:
 
 | Field       | Description                                              |
 |-------------|----------------------------------------------------------|
 | `area`      | Visual area label (1 = V1, 2 = V2, 3 = V3, 4 = V4)       |
-| `tuning`    | 2D retinotopic tuning vector `[x, y]` (normalized)       |
+| `tuning`    | 2D retinotopic tuning vector `[x, y]`, in visual degrees |
 | `loc`       | 2D MDS coordinates `[x, y]` used for the kernel geometry |
 | `is_center` | `1` for the foveal-center node, `0` otherwise            |
 
-Subjects: `R1` (NMT template) and `S1`–`S6`, which are the six individual
-macaques reported as M1–M6 in the paper. Each has a left (`lh`) and right
-(`rh`) hemisphere, so 14 files in total.
+Subjects: `R1` is the NMT population template, called NMT in the paper. `S1`–`S6`
+are the six individual macaques, reported as M1–M6. Each has a left (`lh`) and a
+right (`rh`) hemisphere, so 14 files.
 
-| Argument      | Meaning                       | Default       |
-|---------------|-------------------------------|---------------|
-| `--data`      | Subject                       | `R1_gpr_grid` |
-| `--tag`       | Hemisphere (`lh` / `rh`)      | `lh`          |
-| `--radius`    | Radial kernel width (sigma_R) | `1.30`        |
-| `--tangent`   | Tangential kernel width (sigma_T) | `2.20`    |
+`data/R1_lh.pkl` and `data/R1_rh.pkl` are also present. These are the native
+cortical **mesh** for the template, not the resampled grid the model runs on: a
+different node set (3,769 and 3,814 nodes against 3,486 and 3,238) carrying the
+extra fields `loc_3D`, `loc_sphere` and `tuning_original`. They are the substrate
+for the phase-versus-distance analysis in Fig. 4, where geodesic distance has to be
+measured on the mesh. Do not pass them to `--data`; use the `_gpr_grid_` files.
 
-`run_example.sh` exposes the same four as `--data`, `--tag`, `--sigma-r`,
-`--sigma-t`, and keeps `mode=mds`, `distance_mode=polar`,
-`algo=deterministic` fixed.
+Nodes are re-sorted by area when loaded, so `Node_ID` in the output is the original
+pkl key rather than a row index.
+
+| Argument      | Meaning                           | Default       |
+|---------------|-----------------------------------|---------------|
+| `--data`      | Subject                           | `R1_gpr_grid` |
+| `--tag`       | Hemisphere (`lh` / `rh`)          | `lh`          |
+| `--radius`    | Radial kernel width (sigma_R)     | `1.30`        |
+| `--tangent`   | Tangential kernel width (sigma_T) | `2.20`        |
+
+`run_example.sh` exposes the same four as `--data`, `--tag`, `--sigma-r` and
+`--sigma-t`, and keeps `mode=mds`, `distance_mode=polar` and `algo=deterministic`
+fixed. `experiment.py --help` lists further flags used during development; the four
+above are the ones needed to reproduce the paper.
+
+Two environment variables change behaviour and are read directly:
+`SHARED_DATA_ROOT` sets the input directory, and `COLOR_PHI_COVERAGE` (default
+`0.85`) sets the fraction of the V1 phase range the display colour scale spans. The
+second affects figure colours only, never a reported number.
 
 ## Output
 
-Written under `outputs/` (git-ignored). For the default run:
+Written under `outputs/` (git-ignored, and not included in the archived release
+because everything in it is regenerated by the commands above). For the default run:
 
 | File | Description |
 |------|-------------|
-| `outputs/predictions/mds/predicted_R1_gpr_grid_lh_deterministic_1.30_2.20.tsv` | Predicted and empirical V2–V4 tuning values |
-| `outputs/predictions/mds/W_R1_gpr_grid_lh_deterministic_1.30_2.20.npz` | Model weight matrix and node-generation order |
+| `outputs/predictions/mds/predicted_R1_gpr_grid_lh_deterministic_1.30_2.20.tsv` | Predicted and empirical V2–V4 tuning values, one row per node |
+| `outputs/predictions/mds/W_R1_gpr_grid_lh_deterministic_1.30_2.20.npz` | Connection matrix `W`, plus `node_generation_order` and `batch_info` |
 | `outputs/plots/R1_gpr_grid_lh_tuning_compare_1.30_2.20.png` | Empirical and predicted polar-angle and eccentricity maps |
 
-## Batch-ordering control (Supplementary Fig. S4)
+The growth sequence at any intermediate step is reconstructed from `W` together
+with `node_generation_order`; no per-step snapshot is stored.
 
-`--custom_batch_mode {angle|polar|euclidean|x}_{fp|pf|random}` replaces the
-default growth order with a spatially defined one (`fp` = fovea-to-periphery,
-`pf` = periphery-to-fovea within each batch). The mode name is appended to the
-output filenames.
+## Which command produces which figure
+
+| Figure | Command |
+|---|---|
+| Fig. 2, maps and per-area correspondence | default run, `--data R1_gpr_grid --tag lh` and `--tag rh` |
+| Fig. 3, rotation control | `--data R1_gpr_grid_45` / `_90` / `_135`, same parameters |
+| Fig. 4, phase versus geodesic distance | default run; the analysis reads `R1_{lh,rh}.pkl` for mesh distances |
+| Fig. 5A, individual macaques | `--data S1_gpr_grid` … `S6_gpr_grid`, both hemispheres |
+| Fig. 5B, cross-monkey transfer | `--data S1_S2_gpr_grid` style pairs, recipient first |
+| Supp. Fig. S2, parameter grid | `--radius` and `--tangent` swept from 0.5 to 2.5 in steps of 0.1 |
+| Supp. Fig. S4, batch ordering | `--custom_batch_mode`, see below |
+| Supp. Fig. S7, hierarchical variant | separate entry point, `baseline_hier/experiment.py` |
+| Supp. Fig. S9, isotropic kernel | `--radius` equal to `--tangent` |
+
+The figure scripts themselves are not part of this repository; the values they
+plot are provided as Source Data with the paper.
+
+## Batch-ordering control
+
+`--custom_batch_mode {angle|polar|euclidean|x}_{fp|pf|random}` replaces the default
+growth order with a spatially defined one (`fp` = fovea to periphery, `pf` =
+periphery to fovea within each batch). The mode name is appended to the output
+filenames.
 
 ```bash
 cd src
@@ -82,3 +129,12 @@ SHARED_DATA_ROOT=../data python experiment.py \
     --data R1_gpr_grid --tag lh --mode mds \
     --radius 1.30 --tangent 2.20 --custom_batch_mode polar_fp
 ```
+
+The `_random` orders draw a fresh permutation on every call and are not seeded, so
+they reproduce the reported behaviour but not the exact stored output. The
+deterministic orders (`_fp`, `_pf`) and every other result in the paper reproduce
+byte for byte.
+
+## Citation
+
+See `CITATION.cff`.
