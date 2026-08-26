@@ -281,12 +281,6 @@ def runSimulation(args):
     print(f"Coordinate mode: {args.mode}")
     print(f"Algorithm: {args.algo}")
     
-    # The --sim_mode flag was removed on 2026-08-25. It mapped to param["mode"]
-    # = "record", which no branch of polarModel.step() handles, so the growth loop
-    # never ran, simulate() returned None, and the caller went on to overwrite the
-    # correct prediction files with an ungrown model, exiting 0. Nothing reads the
-    # per-step record: the growth-sequence figure is rebuilt from the final weight
-    # matrix and node_generation_order in W_*.npz.
     param_mode = "fit"
     
     # Map algo to sampleMatrix

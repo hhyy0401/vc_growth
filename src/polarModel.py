@@ -8,7 +8,6 @@ from TUNING_COLOR_UTILS import compute_tuning_colors
 
 # Color threshold for masking V1 nodes: nodes with color <= COLOR_MASK_THRESHOLD are masked
 # This must match COLOR_MASK_THRESHOLD in utils.py
-# COLOR_MASK_THRESHOLD = 0.2  # DISABLED: color mask strategy not used
 
 class VisualMatrix3D(object):
     def __init__(self, dataDF, param, outputDir):
@@ -89,9 +88,7 @@ class VisualMatrix3D(object):
         V1_tuning = dataDF[dataDF["area"] == 1][["tuningX", "tuningY"]].values
         self.V1_tuning_tensor = torch.tensor(V1_tuning, device=self.device, dtype=torch.float32)
         V1Count = self.matrixC.shape[0]
-        # DISABLED: color mask strategy not used
-        # self.color_mask = self._compute_color_mask(dataDF, V1Count)
-        # Set all V1 nodes as unmasked (can connect)
+        # Every V1 node is free to connect; no masking is applied.
         self.color_mask = torch.zeros(V1Count, device=self.device, dtype=torch.float32)
         # allocated lazily: initRecord() is ~2.5 GB for NMT LH and only the
         # "visualize" path ever writes to it

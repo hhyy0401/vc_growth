@@ -8,14 +8,6 @@ import matplotlib.patches as patches
 import torch
 import pickle
 
-# The legacy plotting helpers that used to live here (getColorMap, getTuningColor,
-# scaleColor, color, progressVis, drawTuning, drawLocation, drawOrder,
-# visualizeProportion) were removed on 2026-08-25. Nothing called them, and three
-# would have raised if anything had: color() merged on columns no code produces,
-# visualizeProportion() read csv files nothing writes, and drawTuning() called
-# plt.cm.get_cmap, removed in matplotlib 3.9. They are kept in
-# revision/_trash/ if they are ever wanted back.
-
 def create_video_animation(
     data,
     tag,

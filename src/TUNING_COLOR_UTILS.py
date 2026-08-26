@@ -64,6 +64,7 @@ def _phi_from_tuning_coords(
     tag: str | None,
     *,
     anchor_margin: float = 0.05,
+    ref_coords: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute:
@@ -77,6 +78,16 @@ def _phi_from_tuning_coords(
         v1_mask: (N,) boolean mask of V1 nodes used to derive cy/x_min/x_max
         tag: hemisphere tag; contains "rh" -> right anchor, else left anchor
         anchor_margin: margin multiplier relative to V1 x-range
+        ref_coords: optional (N,2) reference tuning used to derive the
+            normalization range and the anchor, instead of tuning_coords itself.
+            Pass this when several datasets must be scored in ONE common frame.
+            The rotation control is the case that needs it: rotating V1 changes
+            the V1 bounding box, so re-deriving the anchor per condition would
+            silently move the anchor (LH 0 deg -> (+0.028, +0.243), 45 deg ->
+            (-0.344, +1.017)) and re-express the identical empirical V2-V4 map
+            in a different frame for every rotation. Passing the unrotated
+            tuning as ref_coords holds the anchor at the 0 deg foveal center,
+            which is what a rotation about that center should preserve.
 
     Returns:
         (phi, r) where each is shape (N,)
@@ -94,14 +105,22 @@ def _phi_from_tuning_coords(
     # that phi/r are invariant to the storage frame (normalized [0,1] vs native
     # visual degrees). Without this, the downstream y*2-1 convention assumes [0,1]
     # and distorts the phase profile when the data is in native-degree units.
-    _v1n = tuning_coords if (not np.any(v1_mask)) else tuning_coords[v1_mask]
+    # The frame is derived from ref_coords when given, so that several datasets
+    # can be scored against one fixed anchor (see ref_coords in the docstring).
+    _frame_src = tuning_coords if ref_coords is None else np.asarray(ref_coords, dtype=float)
+    if _frame_src.shape != tuning_coords.shape:
+        raise ValueError(
+            f"ref_coords must match tuning_coords shape {tuning_coords.shape}, got {_frame_src.shape}"
+        )
+    _v1n = _frame_src if (not np.any(v1_mask)) else _frame_src[v1_mask]
     _lo = _v1n.min(axis=0)
     _hi = _v1n.max(axis=0)
     _rng = np.where(_hi > _lo, _hi - _lo, 1.0)
+    _frame_src = (_frame_src - _lo) / _rng
     tuning_coords = (tuning_coords - _lo) / _rng
 
     # Match the exact anchor/cy convention used by compute_tuning_colors* utilities.
-    v1_tuning_coords = tuning_coords if (not np.any(v1_mask)) else tuning_coords[v1_mask]
+    v1_tuning_coords = _frame_src if (not np.any(v1_mask)) else _frame_src[v1_mask]
     ax_x, x_min, _x_max, cy = _anchor_and_cy_from_v1(v1_tuning_coords, tag=tag, anchor_margin=anchor_margin)
 
     xs = tuning_coords[:, 0]

@@ -17,7 +17,6 @@ from TUNING_COLOR_UTILS import compute_tuning_colors
 
 # Color threshold for masking V1 nodes: nodes with color <= COLOR_MASK_THRESHOLD are masked
 # This must match COLOR_MASK_THRESHOLD in polarModel.py
-# COLOR_MASK_THRESHOLD = 0.2  # DISABLED: color mask strategy not used
 
 
 def normalize_angle(a):
@@ -149,10 +148,10 @@ def compute_dynamic_batch_sizes(DF, output_dir=None, data_name="data", tag_name=
     return counts
 
 def initDirectory(param, outputDir):
-    """Lightweight replacement for the legacy initDirectory helper.
+    """Return a placeholder output directory for the model.
 
-    The current pipeline saves all results from experiment-level code,
-    so the model only needs a placeholder output directory.
+    All results are written by experiment-level code, so the model itself
+    only needs somewhere to point.
     """
     # Keep behavior minimal to avoid side effects; caller can ignore.
     return outputDir
@@ -885,13 +884,7 @@ def save_baseline_results(
             # V1 nodes use true colors for both true and pred
             pred_colors_array[v1_indices] = true_colors_array[v1_indices]
 
-        # DISABLED: color mask strategy not used
-        # # Find masked V1 nodes (color <= COLOR_MASK_THRESHOLD) for gray edge highlighting
-        # masked_v1_indices = []
-        # for idx in v1_indices:
-        #     if true_colors_array[idx] <= COLOR_MASK_THRESHOLD:
-        #         masked_v1_indices.append(idx)
-        masked_v1_indices = []  # No masked nodes
+        masked_v1_indices = []  # no V1 node is masked
 
         # Find V2-V4 nodes with no connections (col_sum == 0)
         V1_count = len(v1_indices)
