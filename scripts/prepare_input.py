@@ -167,6 +167,26 @@ def tuning_from_retinotopy(polar_angle, eccentricity, degrees=True):
     return np.column_stack([eccentricity * np.cos(theta), eccentricity * np.sin(theta)])
 
 
+def clip_tuning_to_v1(tuning, areas):
+    """Clamp non-V1 tuning into the bounding box of the V1 tuning, per axis.
+
+    The model predicts a higher-area node's tuning as a weighted average of the V1
+    tunings it connects to, so anything outside the V1 range is unreachable by
+    construction and would only ever register as error. Measured V2-V4 tuning that
+    falls outside that range -- mostly where the stimulus did not cover the
+    receptive field -- is therefore clamped to the edge of it.
+    """
+    tuning = np.array(tuning, dtype=float, copy=True)
+    v1 = np.asarray(areas) == 1
+    if not np.any(v1) or np.all(v1):
+        return tuning, 0
+    low = tuning[v1].min(axis=0)
+    high = tuning[v1].max(axis=0)
+    outside = np.any((tuning[~v1] < low) | (tuning[~v1] > high), axis=1)
+    tuning[~v1] = np.clip(tuning[~v1], low, high)
+    return tuning, int(outside.sum())
+
+
 # ---------------------------------------------------------------------------
 # Stage 1: MDS
 # ---------------------------------------------------------------------------
@@ -325,6 +345,10 @@ def build(distances, areas, tuning, args):
             f"tuning {len(tuning)}"
         )
 
+    if args.clip_tuning:
+        tuning, clipped = clip_tuning_to_v1(tuning, areas)
+        print(f"Clipped {clipped} non-V1 node(s) to the V1 tuning range")
+
     print(f"[1/3] MDS embedding of {len(distances)} nodes ...")
     xy, stress = mds_embed(distances, seed=args.seed, n_init=args.mds_n_init,
                            max_iter=args.mds_max_iter)
@@ -392,6 +416,10 @@ def parse_args(argv=None):
                         help="Hemisphere; sets which side the phase colour scale is anchored on")
     parser.add_argument("--radians", action="store_true",
                         help="Polar angle is in radians (default: degrees)")
+    parser.add_argument("--no-clip-tuning", dest="clip_tuning", action="store_false",
+                        help="Keep non-V1 tuning that falls outside the V1 tuning range "
+                             "(by default it is clamped to that range, as the model can only "
+                             "predict tuning inside it)")
 
     grid = parser.add_argument_group("grid resampling")
     grid.add_argument("--spacing", type=float, default=0.75,

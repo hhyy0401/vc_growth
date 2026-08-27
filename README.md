@@ -140,6 +140,12 @@ Then run the model on it exactly as on the shipped subjects:
 bash scripts/run_example.sh --data X1_gpr_grid --tag lh
 ```
 
+Before the first stage, non-V1 tuning that falls outside the range of the V1
+tuning is clamped to that range. The model predicts a higher-area node's tuning as
+a weighted average of the V1 tunings it connects to, so anything outside the V1
+range is unreachable by construction and would only ever register as error; the
+distributed datasets are clipped the same way. `--no-clip-tuning` leaves it alone.
+
 The three stages, and the options that control them:
 
 1. **2D MDS embedding** of the distance matrix, flattening the folded patch into a
