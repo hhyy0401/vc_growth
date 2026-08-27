@@ -64,8 +64,8 @@ def create_video_animation(
     # Create mapping from node ID to DF index for O(1) lookup (optimization)
     node_id_to_df_idx = {int(node_id): idx for idx, node_id in enumerate(DF["ID"].values)}
     
-    # Enforce orientation like hybrid tuning comparison:
-    # decide using V1 (true) tuning colors; flip across x-axis (y -> -y) if red isn't on bottom.
+    # Enforce orientation: decide using V1 (true) tuning colors, and flip across
+    # the x-axis (y -> -y) if red isn't on the bottom.
     try:
         true_tuning_coords = DF[["tuningX", "tuningY"]].values.astype(float)
         true_colors = compute_tuning_colors(true_tuning_coords, v1_mask=v1_mask, tag=tag)

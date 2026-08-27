@@ -9,14 +9,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.offline import plot
 
-sys.path.append('..')
-# Import unified tuning color utilities
-import sys
-sys.path.insert(0, '..')  # Add parent directory to path
+sys.path.insert(0, '..')
 from TUNING_COLOR_UTILS import compute_tuning_colors
-
-# Color threshold for masking V1 nodes: nodes with color <= COLOR_MASK_THRESHOLD are masked
-# This must match COLOR_MASK_THRESHOLD in polarModel.py
 
 
 def normalize_angle(a):
@@ -262,7 +256,7 @@ def plot_tuning_compare_two_panel(
     pred_rgba = [cmap(c) for c in pred_colors_discrete]
 
     # Enforce orientation: red should be bottom, blue top.
-    # If not satisfied, flip across x-axis (y -> -y). This matches the hybrid comparison pipeline.
+    # If not satisfied, flip across x-axis (y -> -y).
     # For rotated datasets (e.g., R1_gpr_grid_90_lh), use fixed flip based on tag:
     #   lh: no flip (flip_y = False)
     #   rh: yes flip (flip_y = True)
@@ -570,14 +564,14 @@ def loadDataDF(data="X1", tag="lh", mode="sphere"):
     print(f"Area distribution: {DF['area'].value_counts().sort_index().to_dict()}")
     print(f"Coordinate mode: {mode}")
 
-    # Similar calculations to dataProcess.py transformData
     # Separate V1 and non-V1 areas
     V1DF = DF[DF["area"] == 1].copy()
     VnDF = DF[DF["area"] != 1].copy()
     V1Count = V1DF.shape[0]
     VnCount = VnDF.shape[0]
 
-    # Skip distance calculation for now - set default values
+    # V1 distance is not used by the growth order, so leave the columns at
+    # placeholder values rather than paying for the pairwise computation.
     VnDF.loc[:, "V1Dist"] = 0.0
     VnDF.loc[:, "distGroup"] = pd.cut([0.0] * VnCount, 10)
     VnDF.loc[:, "anchorOrder"] = list(range(VnCount))
@@ -770,10 +764,9 @@ def save_baseline_results(
         save_dict["batch_info"] = np.array([batch_info_bytes], dtype=object)
     np.savez_compressed(weight_file, **save_dict)
 
-    # 3. Params CSV (disabled - not used)
     param_file = None
 
-    # 4. Two-panel plot: left=true, right=predicted (area1 uses true) - ALWAYS GENERATED
+    # 3. Two-panel plot: left=true, right=predicted (area 1 uses true)
     pred_colors_array = None
     try:
         import matplotlib.pyplot as plt

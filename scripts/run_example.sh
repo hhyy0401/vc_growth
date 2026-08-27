@@ -7,7 +7,7 @@
 #   bash scripts/run_example.sh --data S1_gpr_grid --tag rh
 #   bash scripts/run_example.sh --data R1_gpr_grid --sigma-r 1.30 --sigma-t 2.20
 #
-# Backward-compatible positional form:
+# Positional form:
 #   bash scripts/run_example.sh S1_gpr_grid rh
 set -euo pipefail
 

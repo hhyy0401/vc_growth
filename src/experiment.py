@@ -70,7 +70,6 @@ def parameterSearch(bounds, initialVals, data="R1_gpr_grid", tag="lh", mode='mds
         fout.write("radius,tangent,mse\n")
     
     if SKOPT_AVAILABLE:
-        # Use TPE optimization like baseline
         space = [
             Real(bounds[0][0], bounds[0][1], name='radius'),
             Real(bounds[1][0], bounds[1][1], name='tangent'),
@@ -101,7 +100,7 @@ def parameterSearch(bounds, initialVals, data="R1_gpr_grid", tag="lh", mode='mds
         print(f"  Tangent: {best_params[1]:.4f}")
         print(f"  Best MSE: {best_score:.6f}")
 
-        # Save parameters to txt file like baseline
+        # Save parameters to txt file
         param_txt = f"../outputs/predictions/{mode}/params_{data}_{tag}.txt"
         os.makedirs(os.path.dirname(param_txt), exist_ok=True)
         with open(param_txt, "w") as f:
@@ -154,7 +153,7 @@ def parameterSearch(bounds, initialVals, data="R1_gpr_grid", tag="lh", mode='mds
     with open(param_csv, "a", newline="\n") as fout:
         fout.write(f"{best_params[0]:.6f},{best_params[1]:.6f},{mse_only:.6f}\n")
     
-    # Save best results in baseline format (no plot generation)
+    # Save results for the best parameter pair
     class Args:
         def __init__(self):
             self.data = data
@@ -270,7 +269,6 @@ def runSimulation(args):
     print(f"Using distance mode: {distance_mode}")
     # num_degree defaults to 1; can be overridden via --num_degree
     eff_num_degree = int(getattr(args, "num_degree", 1))
-    # Radius threshold replaces legacy euclidean threshold (no more --euclidean)
     radius_threshold = float(args.radius)
     tangent = args.tangent
     if distance_mode == "polar":
@@ -419,7 +417,7 @@ def main():
         DF, matrix, pred_colors_array = runSimulation(args)
         
         # Create video animation using saved results (no re-simulation)
-        # For backward-compatible filenames, pass the radius value as the legacy 'euclidean' argument.
+        # create_video_animation names its output after the radial width.
         radius_for_video = float(getattr(args, "radius", 1.30))
         create_video_animation(
             args.data,

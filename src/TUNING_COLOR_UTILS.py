@@ -14,12 +14,7 @@ def get_tuning_colormap():
     Returns:
         ListedColormap: Matplotlib colormap with 11 discrete colors from red to purple
     """
-    # Original rainbow colormap (commented out - using custom 10-color palette instead)
-    # import matplotlib.pyplot as plt
-    # return plt.cm.rainbow
-    
     # Custom 10-color palette (0.0 to 0.9 in 0.1 steps)
-    # 9 colors provided + purple added = 10 colors total
     colors_list = [
         '#73141B',  # 0.0 - Red (dark red)
         '#fd4405',  # 0.1 - Red-Orange
@@ -674,25 +669,13 @@ def rasterize_uniform_grid(
 # ---------------------------------------------------------------------------
 # Visual-degree denormalization
 # ---------------------------------------------------------------------------
-# Denormalization parameters: convert normalized tuning [0,1] back to visual
-# degrees (X, Y in the visual field).
-# Format per entry: (scale_x, offset_x, scale_y, offset_y)
-# Formula:  tuning_vd = tuning_norm * scale + offset
-# Derived from *_original_lh.pkl  (tuning_original field)
-#        and  *_rh.pkl             (tuning_original field).
+# Per-subject affine that maps a stored tuning value back to visual degrees:
+#   tuning_vd = tuning_norm * scale + offset,  entries (scale_x, offset_x, scale_y, offset_y).
+# Every distributed dataset already stores tuning in native visual degrees, so
+# the transform is the identity; the table is kept as the hook for data stored
+# in a normalized [0,1] frame.
 _TUNING_DENORM_PARAMS = {
-    'R1': {
-        'lh': (1.0, 0.0, 1.0, 0.0),  # R1 lh migrated to native visual degrees (was 10.1010,-2.3799,13.8060,-5.2969)
-        'rh': (1.0, 0.0, 1.0, 0.0),  # R1 rh already in visual degrees
-    },
-    # S1-S6 migrated to native visual degrees (all cached tsvs denormalized in
-    # place), so denorm is now identity. OLD [0,1]->deg params kept for reference:
-    #   S1 lh (12.2134,-10.5000,15.1515,-6.2300)  rh (14.9360,-2.1200,18.1140,-7.8370)
-    #   S2 lh (12.7479,-2.8650,27.9710,-14.6000)  rh (14.5423,-13.9600,14.9155,-6.1580)
-    #   S3 lh (10.3792,0.0008,15.1021,-5.8250)    rh (12.3051,-10.1500,19.6700,-9.4080)
-    #   S4 lh (10.7626,0.0134,20.0380,-7.9520)    rh (11.7734,-11.3100,14.2716,-6.9610)
-    #   S5 lh (15.2130,-2.6710,21.5858,-11.6900)  rh (17.8800,-17.8800,19.0959,-10.8200)
-    #   S6 lh (12.5860,-2.0070,17.5232,-10.3500)  rh (13.3018,-10.7100,17.5117,-8.0590)
+    'R1': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
     'S1': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
     'S2': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
     'S3': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},

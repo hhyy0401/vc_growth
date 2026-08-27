@@ -6,8 +6,6 @@ import sys
 sys.path.insert(0, '..')
 from TUNING_COLOR_UTILS import compute_tuning_colors
 
-# Color threshold for masking V1 nodes: nodes with color <= COLOR_MASK_THRESHOLD are masked
-# This must match COLOR_MASK_THRESHOLD in utils.py
 
 class VisualMatrix3D(object):
     def __init__(self, dataDF, param, outputDir):
@@ -67,7 +65,7 @@ class VisualMatrix3D(object):
 
         self.radius = float(param.get("radius", 1.30))
         self.tangent = float(param.get("tangent", 2.20))
-        # "polar" = rotated elliptical kernel; "arc" = old arc+radius kernel; "euclidean" = 3D euclidean
+        # "polar" = rotated elliptical kernel; "arc" = arc+radius kernel; "euclidean" = 3D euclidean
         self.distance_mode = param.get("distance_mode", "polar")
         self.matrixC, self.matrixW, self.matrixD, self.mask = self.initMatrix(
             dataDF,
@@ -129,11 +127,10 @@ class VisualMatrix3D(object):
             #   d_r = log_i(j).e_r(i),  d_t = log_i(j).e_t(i)      (d_r^2 + d_t^2 = g_ij^2)
             # Because u_i . e_r(i) = 0, this reduces to the (N,N) forms below with NO
             # (N,N,3) tensor:  d_r[i,j] = (g_ij / sin th_ij) * (u_j . e_r(i)).
-            # This replaces the old azimuthal-equidistant projection about is_center,
-            # which stretched tangential distances by th/sin(th) (up to ~21% at the
-            # patch edge). The center only DEFINES the radial direction, not the origin
-            # of distance. Everything else (center, growth rule, algo, node
-            # order) is identical to MDS mode.
+            # The center only DEFINES the radial direction, not the origin of
+            # distance; a projection about is_center would instead stretch tangential
+            # distances by th/sin(th) (up to ~21% at the patch edge). Everything else
+            # (center, growth rule, algo, node order) is identical to MDS mode.
             R_SPHERE = 100.0
             sx = torch.tensor(DF["sx"].values, device=self.device, dtype=torch.float64)
             sy = torch.tensor(DF["sy"].values, device=self.device, dtype=torch.float64)
@@ -274,9 +271,8 @@ class VisualMatrix3D(object):
         V1Count = self.matrixC.shape[0]
         VnCount = self.matrixD.shape[1]
         if mode not in ("fit", "visualize"):
-            # Silence here is how --sim_mode record used to destroy results:
-            # an unhandled mode fell through, nothing grew, and the caller
-            # saved the untouched matrix as if it were a finished run.
+            # Fail loudly: an unhandled mode would grow nothing and the caller
+            # would save the untouched matrix as if it were a finished run.
             raise ValueError(f"unknown simulation mode {mode!r}")
         if mode == "fit":
             total_remaining = int(torch.sum(torch.diag(self.mask)).item())
