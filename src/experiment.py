@@ -59,7 +59,7 @@ def wrapper(x, data, mode='mds', min_degree=1, max_degree=1, batch_size_start=10
     matrix = VisualMatrix3D(data, param, "dummy")
     return matrix.indicator
 
-def parameterSearch(bounds, initialVals, data="R1_gpr_grid", tag="lh", mode='mds', n_calls=200, min_degree=1, max_degree=3, batch_size_start=100, batch_size_end=40):
+def parameterSearch(bounds, initialVals, data="NMT_gpr_grid", tag="lh", mode='mds', n_calls=200, min_degree=1, max_degree=3, batch_size_start=100, batch_size_end=40):
     DF = loadDataDF(data, tag, mode)
     
     # Create CSV file for parameter logging
@@ -176,7 +176,7 @@ def parameterSearch(bounds, initialVals, data="R1_gpr_grid", tag="lh", mode='mds
         'result': result if SKOPT_AVAILABLE else None
     }
 
-def gridSearch(data="R1_gpr_grid", tag="lh", mode='mds', min_degree=1, max_degree=3, batch_size_start=100, batch_size_end=40):
+def gridSearch(data="NMT_gpr_grid", tag="lh", mode='mds', min_degree=1, max_degree=3, batch_size_start=100, batch_size_end=40):
     """Grid search over parameter combinations"""
     DF = loadDataDF(data, tag, mode)
     
@@ -359,8 +359,8 @@ def main():
     parser = argparse.ArgumentParser(description="Visual Cortex Simulation")
     
     # Data parameters
-    parser.add_argument("--data", type=str, default="R1_gpr_grid",
-                        help="Data identifier (R1_gpr_grid, S1_gpr_grid, ..., S6_gpr_grid)")
+    parser.add_argument("--data", type=str, default="NMT_gpr_grid",
+                        help="Data identifier (NMT_gpr_grid, M1_gpr_grid, ..., M6_gpr_grid)")
     parser.add_argument("--tag", type=str, default="lh", choices=["lh", "rh"], help="Hemisphere tag")
     parser.add_argument("--algo", type=str, default="deterministic", choices=["deterministic", "stochastic"], help="Sampling algorithm")
     parser.add_argument("--param_search", type=str, default="predefine", choices=["search", "predefine", "grid"], help="Parameter search mode")

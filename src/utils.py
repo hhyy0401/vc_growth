@@ -257,7 +257,7 @@ def plot_tuning_compare_two_panel(
 
     # Enforce orientation: red should be bottom, blue top.
     # If not satisfied, flip across x-axis (y -> -y).
-    # For rotated datasets (e.g., R1_gpr_grid_90_lh), use fixed flip based on tag:
+    # For rotated datasets (e.g., NMT_gpr_grid_90_lh), use fixed flip based on tag:
     #   lh: no flip (flip_y = False)
     #   rh: yes flip (flip_y = True)
     v1_mask = (areas == 1)

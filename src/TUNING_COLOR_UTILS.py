@@ -675,20 +675,20 @@ def rasterize_uniform_grid(
 # the transform is the identity; the table is kept as the hook for data stored
 # in a normalized [0,1] frame.
 _TUNING_DENORM_PARAMS = {
-    'R1': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
-    'S1': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
-    'S2': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
-    'S3': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
-    'S4': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
-    'S5': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
-    'S6': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'NMT': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'M1': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'M2': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'M3': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'M4': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'M5': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
+    'M6': {'lh': (1.0, 0.0, 1.0, 0.0), 'rh': (1.0, 0.0, 1.0, 0.0)},
 }
 
 
 def get_tuning_denorm_params(data_name: str, tag: str):
     """Return (scale_x, offset_x, scale_y, offset_y) for a subject/hemi.
 
-    *data_name* can be e.g. ``"R1_gpr_grid"`` or ``"S1_S2_gpr_grid"``; the
+    *data_name* can be e.g. ``"NMT_gpr_grid"`` or ``"M1_M2_gpr_grid"``; the
     subject is taken from the first token before ``'_'``.
     """
     subject = data_name.split('_')[0]

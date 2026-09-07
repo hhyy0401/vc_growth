@@ -4,18 +4,18 @@
 #
 # Usage:
 #   bash scripts/run_example.sh
-#   bash scripts/run_example.sh --data S1_gpr_grid --tag rh
-#   bash scripts/run_example.sh --data R1_gpr_grid --sigma-r 1.30 --sigma-t 2.20
+#   bash scripts/run_example.sh --data M1_gpr_grid --tag rh
+#   bash scripts/run_example.sh --data NMT_gpr_grid --sigma-r 1.30 --sigma-t 2.20
 #
 # Positional form:
-#   bash scripts/run_example.sh S1_gpr_grid rh
+#   bash scripts/run_example.sh M1_gpr_grid rh
 set -euo pipefail
 
 usage() {
     sed -n '2,11p' "$0"
 }
 
-DATA="R1_gpr_grid"
+DATA="NMT_gpr_grid"
 TAG="lh"
 SIGMA_R="1.30"
 SIGMA_T="2.20"
