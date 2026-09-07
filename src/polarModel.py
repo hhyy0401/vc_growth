@@ -12,6 +12,10 @@ class VisualMatrix3D(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.outputDir = initDirectory(param, outputDir)
         self.num_degree = int(param.get("num_degree", 1))
+        # ddw (direct_distance_weight): propagation = indirect (C @ W @ D) + ddw * direct
+        # (D[:V1]). The direct V1 -> Vn kernel is constant during growth. The published
+        # runs use ddw = 1.0.
+        self.direct_distance_weight = float(param.get("direct_distance_weight", 1.0))
         self.mode = param.get("coordinate_mode", "sphere")
         self.batch_size_start = int(param.get("batch_size_start", int(param.get("batch_size", 1))))
         self.batch_size_end = int(param.get("batch_size_end", int(param.get("batch_size", 1))))
@@ -78,6 +82,8 @@ class VisualMatrix3D(object):
         # Initial W = [I | 0], so C @ W @ D = C @ D[:V1Count, :]
         _V1 = self.matrixC.shape[0]
         self._cached_propagation = (self.matrixC @ self.matrixD[:_V1, :]).clone()
+        # add the constant direct V1 -> Vn kernel
+        self._cached_propagation = self._cached_propagation + self.direct_distance_weight * self.matrixD[:_V1, :]
         self._cached_deg = torch.zeros(_V1, device=self.device, dtype=torch.float32)
         self.dataDF = dataDF
         self.tag = param.get("tag", None)
