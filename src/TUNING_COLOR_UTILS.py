@@ -126,6 +126,15 @@ def _phi_from_tuning_coords(
         dx = np.maximum(ax_x - xs, 1e-12)
     dy = ys - cy
 
+    # TUNING_FRAME=native measures phi and r in the stored (native visual-degree)
+    # units about the SAME center: undo the per-axis V1-range rescale (x by
+    # _rng[0], y by _rng[1] / 2 because of the y*2-1 step). The center, the dx
+    # direction and the dx floor are unchanged. Default is "native" (visual
+    # degrees); "normalized" reproduces the pre-2026-09-14 published values.
+    import os as _os
+    if _os.environ.get("TUNING_FRAME", "native") == "native":
+        dx = dx * _rng[0]
+        dy = dy * (_rng[1] / 2.0)
     phi = np.arctan2(dy, dx)
     r = np.sqrt(dx * dx + dy * dy)
     return phi, r
@@ -272,6 +281,10 @@ def compute_tuning_colors_r(tuning_coords, v1_mask=None, tag=None):
         # smallest r -> 0.9, largest r -> 0.0
         colors[mask] = (9 - i) / 10.0
 
+    # Nodes nearer the fovea than every V1 node fall below the first decile edge
+    # and would otherwise keep the initial 0.0 (the peripheral colour).
+    colors[r_clip < quantile_values[0]] = 0.9
+
     return np.clip(colors, 0.0, 0.9)
 
 
@@ -307,6 +320,7 @@ def compute_tuning_colors_r_v2(tuning_coords, v1_mask=None, tag=None):
         else: mask = (r_clip > quantile_values[i]) & (r_clip <= quantile_values[i + 1])
         # scale to 0.0, 0.1, ..., 0.9
         colors[mask] = (9 - i) / 10.0
+    colors[r_clip < quantile_values[0]] = 0.9   # nearer the fovea than every V1 node
     return np.clip(colors, 0.0, 0.9)
 
 
