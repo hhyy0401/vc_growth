@@ -11,13 +11,11 @@ import pickle
 def create_video_animation(
     data,
     tag,
-    mode,
-    euclidean=1.30,
+    radius=1.30,
     tangent=2.20,
     DF=None,
     matrix=None,
     pred_colors_array=None,
-    distance_mode="polar",
     custom_batch_mode=None,
 ):
     """
@@ -34,10 +32,9 @@ def create_video_animation(
     )
 
     print("Creating video animation from saved simulation results…")
-    print(f"Parameters: euclidean={euclidean}, tangent={tangent}")
+    print(f"Parameters: sigma_R={radius}, sigma_T={tangent}")
     print("NOTE: Using pre-computed simulation results and colors (no re-simulation, no re-computation)")
 
-    # DF, matrix, and pred_colors_array must be provided (from runSimulation)
     if DF is None or matrix is None:
         raise ValueError("DF and matrix must be provided (from runSimulation). No re-simulation will be performed.")
     if pred_colors_array is None:
@@ -61,7 +58,6 @@ def create_video_animation(
     V1_count = len(V1_df)
     V1_nodes = V1_df["ID"].values
     
-    # Create mapping from node ID to DF index for O(1) lookup (optimization)
     node_id_to_df_idx = {int(node_id): idx for idx, node_id in enumerate(DF["ID"].values)}
     
     # Enforce orientation: decide using V1 (true) tuning colors, and flip across
@@ -80,7 +76,6 @@ def create_video_animation(
         all_y = all_y.copy()
         all_y *= -1.0
 
-    # Use canonical discrete tuning colormap (10 bins) for video coloring (match PNG pipeline)
     cmap = get_tuning_colormap()
     pred_bins = round_color_bins(np.asarray(pred_colors_array, dtype=float))
     all_colors = []
@@ -97,16 +92,13 @@ def create_video_animation(
         }
     )
 
-    # Batch nodes for video frames (minimum 20 nodes per frame unless it's the last batch)
     MIN_NODES_PER_FRAME = 20
     current_frame_nodes = []
     
-    # Use batch_info from simulation (automatically generated during simulation)
     # batch_info is a list of batches, each batch is a list of (vn_idx, [v1_indices], predicted_tuning_color)
     batch_info = matrix.batch_info
     if batch_info:
         for batch_idx, batch_nodes_info in enumerate(batch_info, start=1):
-            # Extract V2-V4 node IDs from batch
             batch_vn_ids = []
             for vn_idx, v1_indices, pred_tuning_color in batch_nodes_info:
                 if 0 <= vn_idx < len(Vn_df):
@@ -114,7 +106,6 @@ def create_video_animation(
             
             current_frame_nodes.extend(batch_nodes_info)
             
-            # Check if we have enough nodes for a frame or if it's the last batch
             current_frame_vn_ids = []
             for b_vn_idx, _, _ in current_frame_nodes:
                 if 0 <= b_vn_idx < len(Vn_df):
@@ -137,18 +128,15 @@ def create_video_animation(
 
     for g_idx, group in enumerate(node_groups):
         is_last_frame = (g_idx == len(node_groups) - 1)
-        # Accumulate all nodes that have appeared up to this timestamp
         all_visible_nodes.update(group["nodes"])
 
         frame_colors = ["rgb(220, 220, 220)"] * len(DF)
         frame_opacity = [0.1] * len(DF)
-        # Base size for all nodes
         frame_size = [8] * len(DF)
 
         visible_vn_ids = [nid for nid in all_visible_nodes if nid not in V1_nodes]
         current_group_vn_ids = [nid for nid in group["nodes"] if nid not in V1_nodes]
         
-        # Get V1 parent nodes from batch_info
         parent_mask = np.zeros(V1_count, dtype=bool)
         if "batch_info" in group:
             batch_nodes_info = group["batch_info"]
@@ -163,8 +151,6 @@ def create_video_animation(
             frame_opacity[df_idx] = 1.0
             if (not is_last_frame) and 0 <= v1_idx < len(parent_mask) and parent_mask[v1_idx]:
                 frame_size[df_idx] = 14
-        # Use batch_info to determine if V2-V4 nodes have connections
-        # Build mapping from node ID to connection status for current batch
         vn_has_connections = {}
         if "batch_info" in group:
             batch_nodes_info = group["batch_info"]
@@ -175,24 +161,18 @@ def create_video_animation(
         
         for node_id in visible_vn_ids:
             df_idx = node_id_to_df_idx[int(node_id)]  # O(1) lookup
-            # Check if this V2-V4 node has connections from batch_info
             if node_id in vn_has_connections:
                 if vn_has_connections[node_id]:
-                    # Use saved color from batch_info
                     frame_colors[df_idx] = all_colors[df_idx]
                     frame_opacity[df_idx] = 1.0
-                    # Increase size for nodes in current batch (but not in last frame)
                     if node_id in current_group_vn_ids and not is_last_frame:
                         frame_size[df_idx] = 14  # Larger size for newly added nodes
                 else:
                     frame_colors[df_idx] = "rgb(0, 0, 0)"
                     frame_opacity[df_idx] = 1.0
             else:
-                # For nodes not in current batch, check if they appeared in previous batches
-                # (they should have connections if they're visible)
                 frame_colors[df_idx] = all_colors[df_idx]
                 frame_opacity[df_idx] = 1.0
-        # Use circles for all areas.
         node_ids_all = [str(int(v)) for v in DF["ID"].values]
         frame_data = [
             go.Scatter(
@@ -275,21 +255,18 @@ def create_video_animation(
 
     out_dir = os.path.join("..", "outputs", "plots", "video")
     os.makedirs(out_dir, exist_ok=True)
-    e_str = f"{euclidean:.2f}"
+    e_str = f"{radius:.2f}"
     a_str = f"{tangent:.2f}"
-    # Always use .html extension (polar mode)
     filename_suffix = f"_{e_str}_{a_str}"
     if custom_batch_mode:
         filename_suffix += f"_{custom_batch_mode}"
     out_path = os.path.join(out_dir, f"{data}_{tag}_animation{filename_suffix}.html")
     plot(fig, filename=out_path, auto_open=False)
     print(f"Video animation saved to: {out_path}")
-    # Simulation outputs are saved before animation rendering.
 
-    # Generate timestamp plot for custom batch modes
     if custom_batch_mode:
         create_timestamp_plot(
-            data, tag, euclidean=euclidean, tangent=tangent,
+            data, tag, radius=radius, tangent=tangent,
             all_x=all_x, all_y=all_y, v1_mask=v1_mask,
             V1_count=V1_count,
             node_generation_order=matrix.node_generation_order,
@@ -300,7 +277,7 @@ def create_video_animation(
 
 
 def create_timestamp_plot(
-    data, tag, euclidean, tangent,
+    data, tag, radius, tangent,
     all_x, all_y, v1_mask, V1_count,
     node_generation_order, custom_batch_mode,
     batch_info=None, areas=None,
@@ -319,8 +296,6 @@ def create_timestamp_plot(
     N = len(all_x)
     vn_mask = ~v1_mask
 
-    # --- Build batch membership map ---
-    # node_batch_map: vn_col -> (batch_id, position_in_batch, batch_size)
     node_batch_map = {}
     n_batches = 0
     if batch_info:
@@ -329,14 +304,11 @@ def create_timestamp_plot(
             for pos, (vn_col, _, _) in enumerate(batch):
                 node_batch_map[int(vn_col)] = (b_idx, pos, len(batch))
 
-    # --- Assign colors ---
     colors = np.zeros((N, 4), dtype=float)
 
-    # V1: light gray
     v1_color = (0.82, 0.82, 0.82, 1.0)
     colors[v1_mask] = v1_color
 
-    # Build 30-color categorical palette from tab20 (20) + tab20b (10)
     _tab20 = plt.cm.tab20
     _tab20b = plt.cm.tab20b
     batch_palette = []
@@ -363,17 +335,14 @@ def create_timestamp_plot(
         else:
             frac = 0.5
         if frac <= 0.5:
-            # white → normal: blend base with white
             t = frac / 0.5  # 0→1
             rgb = base_rgb * t + white * (1.0 - t)
         else:
-            # normal → dark shadow
             t = (frac - 0.5) / 0.5  # 0→1
             dark_factor = 1.0 - 0.92 * t
             rgb = base_rgb * dark_factor
         colors[i] = (rgb[0], rgb[1], rgb[2], 1.0)
 
-    # --- Figure layout: brain plot + colorbar side-by-side ---
     fig = plt.figure(figsize=(7, 6))
     gs = fig.add_gridspec(1, 2, width_ratios=[5, 1], wspace=0.02)
     ax = fig.add_subplot(gs[0, 0])
@@ -385,14 +354,12 @@ def create_timestamp_plot(
 
     marker_size = 36
 
-    # Draw V1
     sc1 = ax.scatter(
         all_x[v1_mask], all_y[v1_mask],
         c=[v1_color], s=marker_size, marker="o",
         linewidths=0, edgecolors="none", rasterized=True, zorder=1,
     )
     sc1.set_antialiased(False)
-    # Draw Vn
     sc2 = ax.scatter(
         all_x[vn_mask], all_y[vn_mask],
         c=colors[vn_mask], s=marker_size, marker="o",
@@ -400,8 +367,6 @@ def create_timestamp_plot(
     )
     sc2.set_antialiased(False)
 
-    # --- Colorbar 1 (left, small): within-batch gradient 0→1 ---
-    # white → gray(mid) → black
     wb_cmap = LinearSegmentedColormap.from_list(
         "within_batch", [(1, 1, 1), (0.5, 0.5, 0.5), (0.08, 0.08, 0.08)], N=256
     )
@@ -412,10 +377,8 @@ def create_timestamp_plot(
     cbar_wb = fig.colorbar(sm_wb, cax=cax_wb, orientation="vertical")
     cbar_wb.set_ticks([0, 1])
     cbar_wb.set_ticklabels(["0", "1"])
-    # Increase within-batch colorbar tick label size (2x)
     cbar_wb.ax.tick_params(labelsize=26)
 
-    # --- Colorbar 2 (right): batch index (tab20 + tab20b categorical) ---
     n_colors = max(n_batches, 1)
     cb_colors_list = [tuple(batch_palette[b % len(batch_palette)]) for b in range(n_colors)]
     batch_cmap = LinearSegmentedColormap.from_list("batch", cb_colors_list, N=n_colors)
@@ -429,13 +392,11 @@ def create_timestamp_plot(
     tick_vals = [1, n_colors // 2, n_colors]
     cbar.set_ticks(tick_vals)
     cbar.set_ticklabels([str(v) for v in tick_vals])
-    # Increase batch-index colorbar tick label size (2x)
     cbar.ax.tick_params(labelsize=32)
 
-    # Save
     out_dir = os.path.join("..", "outputs", "plots", "timestamp")
     os.makedirs(out_dir, exist_ok=True)
-    e_str = f"{euclidean:.2f}"
+    e_str = f"{radius:.2f}"
     a_str = f"{tangent:.2f}"
     fname = f"{data}_{tag}_{e_str}_{a_str}_{custom_batch_mode}.png"
     out_path = os.path.join(out_dir, fname)

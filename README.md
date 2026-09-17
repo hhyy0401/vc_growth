@@ -2,12 +2,16 @@
 
 Reference implementation of the growth model. Connectivity grows outward from V1
 into higher visual areas (V2, V3, V4) on fMRI-derived cortical surface geometry,
-and the retinotopic tuning of the higher areas is predicted from that connectivity
-and compared against the measured maps.
+and the retinotopic tuning of the higher areas is predicted from that
+connectivity and compared against the measured maps.
 
-The model is deterministic and every other random state in the pipeline is fixed,
-so the numbers reported in the paper reproduce exactly on re-execution. The one
-exception is noted under [Batch-ordering control](#batch-ordering-control).
+The model is deterministic and every other random state is fixed, so the numbers
+reported in the paper reproduce exactly on re-execution. The one exception is
+`--custom_batch_mode *_random`, which draws a fresh permutation per call.
+
+`--hierarchical` grows in sequential stages: a stage ends once 80% of its source
+nodes have connected, and the targets it assigned become the sources of the next
+stage (`src/hierarchical.py`).
 
 ## Setup
 
@@ -16,223 +20,122 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Tested with **Python 3.10.12**. `requirements.txt` pins every dependency to the
-version used to produce the published results:
-
-| Package | Version | | Package | Version |
-|---|---|---|---|---|
-| numpy | 1.26.4 | | matplotlib | 3.8.3 |
-| pandas | 2.2.1 | | scikit-learn | 1.4.1.post1 |
-| scipy | 1.12.0 | | plotly | 5.24.1 |
-| torch | 2.2.1 | | tqdm | 4.66.2 |
-| scikit-optimize | 0.10.1 | | | |
-
-PyTorch is CPU-capable; the CUDA build (2.2.1+cu121) was used but is not required.
-`scikit-optimize` is needed only for `--param_search search`. A GPU is optional:
-the default run takes about 6 s on a GPU and about 75 s on CPU.
+Tested with Python 3.10.12; `requirements.txt` pins the versions used for the
+published results. A GPU is optional: the default run takes about 6 s on a GPU
+and about 75 s on CPU.
 
 ## Run
 
 ```bash
 bash scripts/run_example.sh
 bash scripts/run_example.sh --data M1_gpr_grid --tag rh
-bash scripts/run_example.sh --data NMT_gpr_grid --tag lh --sigma-r 1.30 --sigma-t 2.20
 ```
 
-With no arguments it runs the NMT template, left hemisphere, at sigma_R = 1.30 and
-sigma_T = 2.20, which is the parameter pair used for every result in the paper.
-
-`run_example.sh` exposes the dataset, the hemisphere and the model's two free
-parameters, and keeps `mode=mds`, `distance_mode=polar` and `algo=deterministic`
-fixed:
-
-| Option | Meaning | Default |
-|--------------|-----------------------------------|---------------|
-| `--data`     | Subject                           | `NMT_gpr_grid` |
-| `--tag`      | Hemisphere (`lh` / `rh`)          | `lh`          |
-| `--sigma-r`  | Radial kernel width (sigma_R)     | `1.30`        |
-| `--sigma-t`  | Tangential kernel width (sigma_T) | `2.20`        |
-
-Equivalent direct call, where the same four appear as `--data`, `--tag`,
-`--radius` and `--tangent`:
+With no arguments it runs the NMT template, left hemisphere, at the parameters
+used for every result in the paper. The equivalent direct call, which also
+exposes the remaining options:
 
 ```bash
 cd src
-SHARED_DATA_ROOT=../data python experiment.py \
-    --data NMT_gpr_grid --tag lh \
-    --mode mds --distance_mode polar --algo deterministic \
-    --radius 1.30 --tangent 2.20
+SHARED_DATA_ROOT=../data python experiment.py --data NMT_gpr_grid --tag lh
 ```
 
-Run from inside `src/`. Output paths are relative to the working directory, so
-calling `python src/experiment.py` from the repository root writes outside the
-repository. `experiment.py --help` lists further flags used during development;
-the four above are the ones needed to reproduce the paper.
+| Option | Meaning | Default |
+|---|---|---|
+| `--data` | Subject: `NMT_gpr_grid`, `M1_gpr_grid` … `M6_gpr_grid` | `NMT_gpr_grid` |
+| `--tag` | Hemisphere, `lh` or `rh` | `lh` |
+| `--radius` | Radial kernel width sigma_R | `1.30`, or `1.40` with `--hierarchical` |
+| `--tangent` | Tangential kernel width sigma_T | `2.20` |
+| `--num_degree` | V1 parents per extrastriate node | `1` |
+| `--custom_batch_mode` | Spatially defined growth order, `{angle\|polar\|euclidean\|x}_{fp\|pf\|random}` (`fp` = fovea to periphery) | off |
+| `--hierarchical` | Grow in sequential stages instead of from V1 only | off |
+| `--kernel` | Distance kernel: `polar`, or `sphere` for the smooth spherical surface | `polar` |
+| `--no_plot` | Skip the comparison plot | off |
+| `--video` | Also write the growth animation as HTML | off |
 
-Two environment variables change behaviour and are read directly:
-`SHARED_DATA_ROOT` sets the input directory, and `COLOR_PHI_COVERAGE` (default
-`0.85`) sets the fraction of the V1 phase range the display colour scale spans. The
-second affects figure colours only, never a reported number.
+`SHARED_DATA_ROOT` sets the input directory. `COLOR_PHI_COVERAGE` (default
+`0.85`) sets the fraction of the V1 phase range the display colour scale spans;
+it affects figure colours only, never a reported number.
 
 ## Input
 
 `data/{subject}_gpr_grid_{hemi}.pkl` is a dict keyed by node ID; each entry holds:
 
-| Field       | Description                                              |
-|-------------|----------------------------------------------------------|
-| `area`      | Visual area label (1 = V1, 2 = V2, 3 = V3, 4 = V4)       |
-| `tuning`    | 2D retinotopic tuning vector `[x, y]`, in visual degrees |
-| `loc`       | 2D MDS coordinates `[x, y]` used for the kernel geometry |
-| `is_center` | `1` for the foveal-center node, `0` otherwise            |
-
-Subjects: `NMT` is the population template used for the primary analyses. `M1`–`M6`
-are the six individual macaques. The labels match the ones printed in the paper.
-Each has a left (`lh`) and a right (`rh`) hemisphere, so 14 files, and all 14 are
-included here.
-
-`data/NMT_lh.pkl` and `data/NMT_rh.pkl` are also present. These are the native
-cortical **mesh** for the template, not the resampled grid the model runs on: a
-different node set (3,769 and 3,814 nodes against 3,486 and 3,238) carrying the
-extra fields `loc_3D`, `loc_sphere` and `tuning_original`. They are the substrate
-for the phase-versus-distance analysis in Fig. 4, where geodesic distance has to be
-measured on the mesh. Do not pass them to `--data`; use the `_gpr_grid_` files.
-
-Nodes are re-sorted by area when loaded, so `Node_ID` in the output is the original
-pkl key rather than a row index.
-
-## Preparing a new dataset
-
-`scripts/prepare_input.py` builds a `_gpr_grid_` file from a new hemisphere, so the
-model can be applied to data other than the macaques shipped here.
-
-**Computing the cortical-surface distance matrix is an input to this pipeline, not
-a part of it.** It depends on which surface representation the dataset uses and on
-the software that walks that surface (SUMA/SurfDist, FreeSurfer, pycortex, ...), so
-it has to be produced beforehand with the tools that fit the data at hand.
-
-### Required inputs
-
-| Input | Contents |
+| Field | Description |
 |---|---|
-| `--distances` | Pairwise surface distance over the N cortical nodes of one hemisphere: an `(N, N)` `.npy`/`.npz` array, or its condensed upper-triangle form |
-| `--cortex` | The cortical data at those same nodes: a `.csv`/`.txt` with a header, or an `.npz`, holding `node`, `area`, `polar_angle` and `eccentricity` |
-| `--out` | Path of the `.pkl` to write |
+| `area` | Visual area label (1 = V1, 2 = V2, 3 = V3, 4 = V4) |
+| `tuning` | 2D retinotopic tuning vector `[x, y]`, in visual degrees |
+| `loc` | 2D MDS coordinates of the cortical node, used for the kernel |
+| `is_center` | `1` for the foveal-center node, `0` otherwise |
 
-`area` uses the same labels as the shipped data (1 = V1 … 4 = V4). `polar_angle` is
-in degrees unless `--radians` is given, and together with `eccentricity` it forms
-the `tuning` vector the model compares against. Rows of `--cortex` must line up with
-rows of `--distances`; if the matrix covers a wider or differently ordered node set,
-pass `--distance-nodes` with the node index of each matrix row and it will be subset
-and reordered to match.
+`NMT` is the population template used for the primary analyses and `M1`–`M6` are
+the six individual macaques, each with a left and a right hemisphere.
+`NMTsphere_gpr_grid_{lh,rh}.pkl` is the template resampled on a smooth spherical
+surface; run it with `--kernel sphere`, which measures distances along the sphere.
+`data/NMT_{lh,rh}.pkl` are the native cortical **mesh** for the template, a
+different node set carrying `loc_3D`, `loc_sphere` and `tuning_original`; do not
+pass them to `--data`.
 
-### Usage
-
-```bash
-python scripts/prepare_input.py \
-    --distances distances_lh.npy \
-    --cortex    cortex_lh.csv \
-    --out       data/X1_gpr_grid_lh.pkl \
-    --tag       lh
-```
-
-Then run the model on it exactly as on the shipped subjects:
-
-```bash
-bash scripts/run_example.sh --data X1_gpr_grid --tag lh
-```
-
-Before the first stage, non-V1 tuning that falls outside the range of the V1
-tuning is clamped to that range. The model predicts a higher-area node's tuning as
-a weighted average of the V1 tunings it connects to, so anything outside the V1
-range is unreachable by construction and would only ever register as error; the
-distributed datasets are clipped the same way. `--no-clip-tuning` leaves it alone.
-
-The three stages, and the options that control them:
-
-1. **2D MDS embedding** of the distance matrix, flattening the folded patch into a
-   plane. `--mds-n-init`, `--mds-max-iter`.
-2. **Uniform-grid resampling.** Cortical nodes are unevenly spaced, which biases the
-   growth order, so the MDS plane is resampled onto an axis-aligned lattice.
-   `--spacing` (default 0.75, in the units of the distance matrix), `--epsilon`
-   (how close a cortical node must be for a lattice point to be kept), `--pad-frac`,
-   `--contamination`, `--dbscan-eps`, `--dbscan-min-samples`. `--epsilon` and
-   `--dbscan-eps` default to values scaled to the node density of the input, so the
-   same settings work on sparser surfaces than the macaque ones.
-3. **Matern Gaussian-process interpolation** of the tuning onto the lattice, fitted
-   one visual-field axis at a time. `--matern-nu` (default 2.5),
-   `--matern-length-scale` (default 1.0), `--noise-level` (default 0.1). Area labels
-   are categorical and are carried over by nearest neighbour instead.
-
-`--seed` (default 42) fixes the MDS, outlier-detection and Gaussian-process random
-states; the script is deterministic for a given seed and set of inputs.
-`scripts/prepare_input.py --help` lists everything.
-
-### Generated output
-
-A single `.pkl` at `--out`, in exactly the format described under
-[Input](#input): a dict keyed by contiguous integers `0 … N-1`, each entry holding
-`loc`, `tuning`, `area` and `is_center`. The script also locates the foveal
-confluence (the V1 node on the mid-V1 phase line closest to the V1 border) and flags
-it as `is_center`, which is what orients the model's radial/tangential kernel; it
-stops with an error if that cannot be found.
-
-Note that MDS fixes a configuration only up to rotation and reflection, so a
-rebuilt file is not expected to be byte-identical to a shipped one even from the
-same surface. Rebuilding the NMT left hemisphere from its geodesic distance matrix
-gives 3,435 grid nodes against the shipped 3,486, with matching extent, area
-composition and eccentricity range.
+`scripts/prepare_input.py` builds a `_gpr_grid_` file for a new hemisphere from a
+pairwise surface-distance matrix and the cortical data at those nodes (MDS
+embedding, uniform-grid resampling, Gaussian-process interpolation of the
+tuning). Computing the surface distances is an input to this pipeline, not a part
+of it. See `--help` for the options.
 
 ## Output
 
-Written under `outputs/` (git-ignored, and not included in the archived release
-because everything in it is regenerated by the commands above). For the default run:
+Written under `outputs/` for the default run:
 
 | File | Description |
-|------|-------------|
-| `outputs/predictions/mds/predicted_NMT_gpr_grid_lh_deterministic_1.30_2.20.tsv` | Predicted and empirical V2–V4 tuning values, one row per node |
+|---|---|
+| `outputs/predictions/mds/predicted_NMT_gpr_grid_lh_deterministic_1.30_2.20.tsv` | Predicted and measured tuning, one row per V2–V4 node |
 | `outputs/predictions/mds/W_NMT_gpr_grid_lh_deterministic_1.30_2.20.npz` | Connection matrix `W`, plus `node_generation_order` and `batch_info` |
-| `outputs/plots/NMT_gpr_grid_lh_tuning_compare_1.30_2.20.png` | Empirical and predicted polar-angle and eccentricity maps |
+| `outputs/plots/NMT_gpr_grid_lh_tuning_compare_1.30_2.20.png` | Measured and predicted polar-angle and eccentricity maps |
 
 The growth sequence at any intermediate step is reconstructed from `W` together
 with `node_generation_order`; no per-step snapshot is stored.
+
+Columns of the TSV:
+
+| Column | Description |
+|---|---|
+| `Node_ID` | Key of the node in the input pkl |
+| `Area` | Visual area label, 2 = V2, 3 = V3, 4 = V4 |
+| `Pred_0`, `Pred_1` | Predicted tuning vector `[x, y]`, in visual degrees |
+| `True_0`, `True_1` | Measured tuning vector `[x, y]`, in visual degrees |
+| `Pred_polar_angle_deg`, `True_polar_angle_deg` | Polar angle in degrees |
+| `Pred_eccentricity_deg`, `True_eccentricity_deg` | Eccentricity in visual degrees |
+| `Retinotopic_error_deg` | Distance between the predicted and the measured tuning vector, in visual degrees |
+
+Polar angle and eccentricity are the tuning vectors read in polar coordinates
+about the V1 anchor, which `src/TUNING_COLOR_UTILS.py` derives from the V1 tuning
+of that hemisphere (`_anchor_and_cy_from_v1`), not about the origin of `[x, y]`;
+`tuning_to_polar` in the same file does the conversion. This is the frame every
+polar angle and eccentricity in the paper is quoted in, and the angle increases
+toward the upper visual field, so the two hemispheres are mirror images of each
+other. The Spearman correlations quoted for Fig. 2 are rank correlations between
+the `True_` and `Pred_` columns over all V2–V4 nodes of a hemisphere.
 
 ## Which command produces which figure
 
 | Figure | Command |
 |---|---|
-| Fig. 2, maps and per-area correspondence | default run, `--data NMT_gpr_grid --tag lh` and `--tag rh` |
-| Fig. 4, phase versus geodesic distance | default run; the analysis reads `NMT_{lh,rh}.pkl` for mesh distances |
+| Fig. 2, maps and per-area correspondence | default run, `--tag lh` and `--tag rh` |
+| Fig. 4, areal boundaries and map size | default run; the boundaries are read off polar angle progression lines traced by hand on the measured and on the predicted map |
 | Fig. 5A, individual macaques | `--data M1_gpr_grid` … `M6_gpr_grid`, both hemispheres |
 | Supp. Fig. S2, parameter grid | `--radius` and `--tangent` swept from 0.5 to 2.5 in steps of 0.1 |
-| Supp. Fig. S4, batch ordering | `--custom_batch_mode`, see below |
-| Supp. Fig. S9, isotropic kernel | `--radius` equal to `--tangent` |
+| Supp. Fig. S4, batch ordering | `--custom_batch_mode euclidean_pf`, `euclidean_fp` and `euclidean_random` |
+| Supp. Fig. S6, smooth-sphere control | `--data NMTsphere_gpr_grid --kernel sphere` |
+| Supp. Fig. S7, hierarchical growth | `--hierarchical` |
+| Supp. Fig. S9, individual macaques, right hemisphere | `--data M1_gpr_grid` … `M6_gpr_grid --tag rh` |
+| Supp. Fig. S10, single-parameter kernel | `--radius` equal to `--tangent`, both 2.13 |
 
-Three further analyses run this same model on inputs derived from the files above
-rather than on the files themselves, and those derived inputs are not distributed
-here: the rotation control (Fig. 3) rotates the template's MDS coordinates, the
-cross-monkey transfer (Fig. 5B) substitutes one animal's V1 into another's grid, and
-the hierarchical variant (Supp. Fig. S7) uses a separate entry point. The figure
-scripts themselves are likewise not part of this repository; the values they plot
-are provided as Source Data with the paper.
-
-## Batch-ordering control
-
-`--custom_batch_mode {angle|polar|euclidean|x}_{fp|pf|random}` replaces the default
-growth order with a spatially defined one (`fp` = fovea to periphery, `pf` =
-periphery to fovea within each batch). The mode name is appended to the output
-filenames.
-
-```bash
-cd src
-SHARED_DATA_ROOT=../data python experiment.py \
-    --data NMT_gpr_grid --tag lh --mode mds \
-    --radius 1.30 --tangent 2.20 --custom_batch_mode polar_fp
-```
-
-The `_random` orders draw a fresh permutation on every call and are not seeded, so
-they reproduce the reported behaviour but not the exact stored output. The
-deterministic orders (`_fp`, `_pf`) and every other result in the paper reproduce
-byte for byte.
+The other figures need an input or an analysis that is not distributed here: the
+rotation control (Fig. 3) rotates the template's V1 tuning before the run, the
+cross-monkey transfer (Fig. 5B) substitutes one animal's V1 into another's grid,
+and the curvature (Supp. Fig. S5) and sampling-line (Supp. Fig. S8) controls need
+cortical curvature and the traced lines respectively. The figure scripts themselves are likewise not part of
+this repository; the values they plot are provided as Source Data with the paper.
 
 ## Citation
 

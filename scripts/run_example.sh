@@ -66,9 +66,6 @@ cd "$REPO_ROOT/src"
 python experiment.py \
     --data "$DATA" \
     --tag "$TAG" \
-    --mode mds \
-    --distance_mode polar \
-    --algo deterministic \
     --radius "$SIGMA_R" \
     --tangent "$SIGMA_T"
 
